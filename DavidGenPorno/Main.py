@@ -22,7 +22,13 @@ def main():
     animator = Animation()
     
     #load default background
-    bg = SpriteRemix.SpriteRemix(image.load("Assets\\backgrounds\shittybackground.png").convert())
+    background = pygame.sprite.Group()
+    bg1 = SpriteRemix.Background(transform.scale(image.load("Assets\\backgrounds\outsidebg.png").convert(),(1920,1080)))
+    bg2 = SpriteRemix.Background(transform.scale(image.load("Assets\\backgrounds\outsidebg.png").convert(),(1920,1080)))
+    bg1.stateVal = 1 #slowscroll
+    bg2.stateVal = 1 #slowscroll
+    bg1.add(background)
+    bg2.add(background)
 
     #create cursor and add it to a sprite group, can only hold 1 cursor at a time
     cursors = pygame.sprite.GroupSingle()
@@ -35,15 +41,15 @@ def main():
     pc = pygame.sprite.Group()
     playerSprite = SpriteRemix.PCSprite(defaultSprite,"pc")
     animator.load(playerSprite)
-    animator.animate(playerSprite, 0) #animate 1 frame before staging
     player = PlayerCharacter(playerSprite)
     player.sprite.add(pc)
+    #animator.animate(playerSprite, 0) #animate 1 frame before staging
 
     #create baddies and add them to a sprite group
     baddies = sprite.Group()
     baddySprite = SpriteRemix.CharacterSprite(defaultSprite,"notzigrunt")
     animator.load(baddySprite)
-    animator.animate(baddySprite, 0) #animate 1 frame before staging
+    #animator.animate(baddySprite, 0) #animate 1 frame before staging
     baddy = NPC(baddySprite)
     baddy.sprite.add(baddies)
 
@@ -58,6 +64,9 @@ def main():
     projectiles = sprite.Group()
 
     #place everything
+    bg1.rect.topleft = [-1920,0]
+    bg2.rect.topleft = [0,0]
+    
     player.sprite.rect.bottom = height
 
     baddy.sprite.rect.bottom = height
@@ -71,11 +80,12 @@ def main():
 
     #create a list of all sprite groups
     entities = [[player],[baddy]]
-    sprites = [pc, baddies, doodads, projectiles, cursors]
+    sprites = [pc, baddies, doodads, projectiles, background, cursors]
 
     while 1:
 
         now = time.get_ticks()
+        
         #this for loop processes all inputs in the event queue
         for event in pygame.event.get():
 
@@ -93,7 +103,7 @@ def main():
             if event.type == MOUSEBUTTONDOWN and event.button == 1 and player.ammo > 0:
                 player.ammo -= 1
                 projLoc = [player.sprite.rect.right, player.sprite.rect.bottom-130]
-                newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=100)
+                newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=60)
                 animator.load(newProj)
                 newProj.add(projectiles)
                 newProj.rect.center = projLoc
@@ -183,16 +193,17 @@ def main():
         resolveFrame(sprites,entities)
 
         #refresh screen by drawing over previous frame with background
-        screen.blit(bg.image, bg.rect)
+        screen.blit(bg1.image, bg1.rect)
+        screen.blit(bg2.image, bg2.rect)
 
         
         #draw and animate all the rest of the in-use assets
         for i in range(len(sprites)):
-            #only animate characters so far (i = 0 is pc, i = 1 is baddies)
-            if i <= 1 or i == 3:
-                for aSprite in sprites[i].sprites():
-                    animator.animate(aSprite, now)
-            sprites[i].draw(screen)
+            #only animate characters and projectiles so far (i = 0 is pc, i = 1 is baddies, i = 3 is projectiles, i = 4 is background)
+            if i <= 1 or i == 3 or i == 4:
+                animator.animate(sprites[i].sprites(), now)
+            if i != 4:
+                sprites[i].draw(screen)
 
         #draw UI last
         screen.blit(healthTextSurface, healthTextRect)
@@ -283,7 +294,7 @@ def physics(sprites,someSprite):
         testsprite.rect.x = someSprite.rect.x
         testsprite.rect.y = someSprite.rect.y
         testsprite.rect = testsprite.rect.move([0,1])
-        if (not sprite.spritecollide(testsprite, sprites[2], False)) and (not testsprite.rect.bottom > height):
+        if (not sprite.spritecollide(testsprite, sprites[2], False)) and (not testsprite.rect.bottom > height-55):
             someSprite.falling = True
         del testsprite
         if someSprite.falling == True:
@@ -317,9 +328,9 @@ def physics(sprites,someSprite):
     else:
 
         #keeps someSprite from falling off screen
-        if someSprite.rect.bottom > height:
+        if someSprite.rect.bottom > height-55:
             someSprite.velocity[1] = 0
-            someSprite.rect.bottom = height
+            someSprite.rect.bottom = height-55
             someSprite.numJumps = 2
             someSprite.falling = False
 

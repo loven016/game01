@@ -25,6 +25,14 @@ class Doodad(SpriteRemix):
         self.xcoast = 0
         self.ycoast = 0
 
+
+class Background(SpriteRemix):
+    def __init__(self, image):
+        super().__init__(image)
+        self.stateVal = 0
+        self.velocity = [0,0]
+        #self.state = ["static","slowscroll","fastscroll"]
+
 #NOTE: right now has no additional functionality, but that may change
 class Cursor(SpriteRemix):
     def __init__(self, image):
