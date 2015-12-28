@@ -7,6 +7,8 @@ from Character import *
 from Movement import *
 from VectorMath import *
 from Animation import *
+from CombatText import *
+
 
 '''
 TODO: wrap any code doing anything which may need to be done repeatedly or in multiple places
@@ -62,6 +64,9 @@ def main():
 
     #initialize projectile sprite group (obv nothing to put here at startup
     projectiles = sprite.Group()
+    
+    #floating combat text
+    combatTextArr = []
 
     #place everything
     bg1.rect.topleft = [-1920,0]
@@ -190,7 +195,7 @@ def main():
 
 
         #keeps characters in frame and handles collisions
-        resolveFrame(sprites,entities)
+        resolveFrame(sprites,entities,combatTextArr)
 
         #refresh screen by drawing over previous frame with background
         screen.blit(bg1.image, bg1.rect)
@@ -204,6 +209,13 @@ def main():
                 animator.animate(sprites[i].sprites(), now)
             if i != 4:
                 sprites[i].draw(screen)
+            
+        #draw active CombatText objects and remove faded ones
+        for combatText in combatTextArr[:]:
+            if combatText.progress(now):
+                combatText.draw(screen)
+            else:
+                combatTextArr.remove(combatText)
 
         #draw UI last
         screen.blit(healthTextSurface, healthTextRect)
@@ -225,7 +237,7 @@ def main():
 
         pygame.display.flip()
 
-def resolveFrame(sprites,entities):
+def resolveFrame(sprites,entities,combatTextArr):
     now = time.get_ticks()
     characters = sprites[0].sprites()
     enemies = sprites[1].sprites()
@@ -246,7 +258,9 @@ def resolveFrame(sprites,entities):
                     del hitter
             if entities[1][ind].health <= 0:
                 enemies[ind].stateVal = 1
-
+            #create combat text to display damage dealt
+            newCombatText = CombatText(str(hitby[0].dmg), enemies[ind].rect.midtop, (255,255,255), 750, 2, now)
+            combatTextArr.append(newCombatText)
 
 
     #health reduction and knockback from enemy contact
@@ -257,9 +271,9 @@ def resolveFrame(sprites,entities):
             if ouch.stateVal != 1:
                 hurts = True
         if hurts:
+            dmg = 10
             entities[0][0].lastHit = now
-
-            entities[0][0].health -= 10
+            entities[0][0].health -= dmg
 
             #keeps char's downward momentum from cancelling knockback if char is falling.
             characters[0].velocity[1] = 0
@@ -270,7 +284,10 @@ def resolveFrame(sprites,entities):
             knockbackUnit = VectorMath.normalize(knockbackDirection)
             #magnified for knockback
             knockback = VectorMath.mult(knockbackUnit,40)
-            Movement.coast(characters[0], knockback[0], knockback[1])
+            Movement.coast(characters[0], knockback[0], knockback[1])            
+            #create combat text to display damage dealt
+            newCombatText = CombatText(str(dmg), characters[0].rect.midtop, (255,0,0), 750, 2, now)
+            combatTextArr.append(newCombatText)
 
     #if sprite hit the ground or started on the ground, convert it's vertical momentum (ycoast) into lateral momentum (xcoast),
     #may reduce this by some constant factor later for better control feel.
