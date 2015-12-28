@@ -32,6 +32,13 @@ def main():
     bg1.add(background)
     bg2.add(background)
 
+    #load ui, TODO: encapsulate this shit
+    ui = pygame.sprite.Group()
+    health = SpriteRemix.UI(transform.scale(image.load("Assets\\sprites\\ui\\health.png").convert(),(596,72)))
+    healthbar = SpriteRemix.UI(transform.scale(image.load("Assets\\sprites\\ui\\healthbar.png").convert_alpha(),(840,84)))
+    health.add(ui)
+    healthbar.add(ui)
+
     #create cursor and add it to a sprite group, can only hold 1 cursor at a time
     cursors = pygame.sprite.GroupSingle()
     crsr = SpriteRemix.Cursor(transform.scale(pygame.image.load("Assets\\sprites\\cursors\\crosshair1.png").convert_alpha(),(70,70)))
@@ -71,6 +78,9 @@ def main():
     #place everything
     bg1.rect.topleft = [-1920,0]
     bg2.rect.topleft = [0,0]
+
+    healthbar.rect.topleft = [50,50]
+    health.rect.topleft = [healthbar.rect.left+239, healthbar.rect.top+5]
     
     player.sprite.rect.bottom = height
 
@@ -79,13 +89,12 @@ def main():
 
     '''box.rect.left = 540
     box.rect.bottom = height
-
     alsoBox.rect.left = 920
     alsoBox.rect.bottom = height'''
 
     #create a list of all sprite groups
     entities = [[player],[baddy]]
-    sprites = [pc, baddies, doodads, projectiles, background, cursors]
+    sprites = [pc, baddies, doodads, projectiles, background, ui, cursors]
 
     while 1:
 
@@ -104,45 +113,53 @@ def main():
                 crsr.rect.centerx = event.pos[0]
                 crsr.rect.centery = event.pos[1]
 
-            #fire projectiles
-            if event.type == MOUSEBUTTONDOWN and event.button == 1 and player.ammo > 0:
-                player.ammo -= 1
-                projLoc = [player.sprite.rect.right, player.sprite.rect.bottom-130]
-                newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=60)
-                animator.load(newProj)
-                newProj.add(projectiles)
-                newProj.rect.center = projLoc
+            #only control pc if pc not dead
+            if player.sprite.stateVal != 4:
+                #fire projectiles
+                if event.type == MOUSEBUTTONDOWN and event.button == 1 and player.ammo > 0:
+                    player.ammo -= 1
+                    projLoc = [player.sprite.rect.right, player.sprite.rect.bottom-130]
+                    newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=60)
+                    animator.load(newProj)
+                    newProj.add(projectiles)
+                    newProj.rect.center = projLoc
 
 
-            #movement d-right a-left space-jump
-            if event.type == KEYUP and event.key == K_d:
-                player.sprite.rightDash = now
-                Movement.accel(player.sprite, -player.sprite.velocity[0])
-                Movement.coast(player.sprite, player.sprite.velocity[0])
+                #movement d-right a-left space-jump
+                if event.type == KEYUP and event.key == K_d:
+                    player.sprite.rightDash = now
+                    Movement.accel(player.sprite, -player.sprite.velocity[0])
+                    Movement.coast(player.sprite, player.sprite.velocity[0])
 
-            if event.type == KEYUP and event.key == K_a:
-                player.sprite.leftDash = now
-                Movement.accel(player.sprite, -player.sprite.velocity[0])
-                Movement.coast(player.sprite, player.sprite.velocity[0])
+                if event.type == KEYUP and event.key == K_a:
+                    player.sprite.leftDash = now
+                    Movement.accel(player.sprite, -player.sprite.velocity[0])
+                    Movement.coast(player.sprite, player.sprite.velocity[0])
 
-            if event.type == KEYDOWN and event.key == K_d:
-                if now - player.sprite.rightDash > 250:
-                    Movement.accel(player.sprite, 12)
-                else:
-                    Movement.accel(player.sprite, 24)
-                player.sprite.leftDash = 0
-                player.sprite.xflip = False
+                if event.type == KEYDOWN and event.key == K_d:
+                    if now - player.sprite.rightDash > 250:
+                        Movement.accel(player.sprite, 12)
+                    else:
+                        Movement.accel(player.sprite, 24)
+                    player.sprite.leftDash = 0
+                    player.sprite.xflip = False
 
-            if event.type == KEYDOWN and event.key == K_a:
-                if now - player.sprite.leftDash > 250:
-                    Movement.accel(player.sprite, -12)
-                else:
-                    Movement.accel(player.sprite, -24)
-                player.sprite.rightDash = 0
-                player.sprite.xflip = True
+                if event.type == KEYDOWN and event.key == K_a:
+                    if now - player.sprite.leftDash > 250:
+                        Movement.accel(player.sprite, -12)
+                    else:
+                        Movement.accel(player.sprite, -24)
+                    player.sprite.rightDash = 0
+                    player.sprite.xflip = True
 
-            if event.type == KEYDOWN and event.key == K_SPACE:
-                Movement.jump(player.sprite)
+                if event.type == KEYDOWN and event.key == K_SPACE:
+                    Movement.jump(player.sprite)
+
+            #ragdoll pc
+            else:
+                player.sprite.xcoast = player.sprite.velocity[0]
+                player.sprite.ycoast = player.sprite.velocity[1]
+                player.sprite.velocity = [0,0]
 
         #baddy behavior
         '''if (now%1000 < 20) and baddy.sprite.stateVal != 1:
@@ -153,7 +170,7 @@ def main():
             player.ammo += 1
 
         #sprites move, but these moves haven't been drawn yet
-        for i in range(len(sprites)-1):
+        for i in range(len(sprites)-2):
             groupList = sprites[i].sprites()
             for aSprite in groupList:
                 if aSprite.xcoast > 0:
@@ -180,18 +197,13 @@ def main():
 
 
         #display the player's health
+        """
         defaultText = font.Font(None,100)
         healthTextSurface = defaultText.render("Player health: " + str(player.health), True, (255,0,0))
         healthTextRect = healthTextSurface.get_rect()
         healthTextRect.top = 50
         healthTextRect.left = 50
-
-        #game over
-        if player.health <= 0:
-            del player
-            quit()
-            print("game over man, game over!")
-            break
+        """
 
 
         #keeps characters in frame and handles collisions
@@ -218,19 +230,35 @@ def main():
                 combatTextArr.remove(combatText)
 
         #draw UI last
-        screen.blit(healthTextSurface, healthTextRect)
-
+        #screen.blit(healthTextSurface, healthTextRect)
+        if health.rect.width > 596*player.health/100:
+            health.image = transform.scale(health.image, (max(0,health.rect.width-3),health.rect.height))
+            health.rect = health.image.get_rect()
+            health.rect.topleft = (289,56) #tempHealthTopLeft
+        screen.blit(health.image, health.rect)
+        screen.blit(healthbar.image, healthbar.rect)
+        
         gameClock.tick(60)
 
-        
+
+        #game over check
+        if player.health <= 0:
+            defaultText = font.Font(None,120)
+            gameOverSurface = defaultText.render("Game Over man, Game Over!", True, (255,0,0))
+            gameOverRect = gameOverSurface.get_rect()
+            gameOverRect.center = (960,540)
+            screen.blit(gameOverSurface, gameOverRect)
+            player.sprite.stateVal = 4
+
+        #victory check
         enemies = sprites[1].sprites()
         allDead = True
         for enemy in enemies:
-            if enemy.stateVal != 1:
+            if enemy.stateVal != 4:
                 allDead = False
         if allDead:
             defaultText = font.Font(None,200)
-            conglaturationSurface = defaultText.render("Conglaturation", True, (0,0,0))
+            conglaturationSurface = defaultText.render("Conglaturation", True, (255,255,255))
             conglaturationRect = conglaturationSurface.get_rect()
             conglaturationRect.center = (960,540)
             screen.blit(conglaturationSurface, conglaturationRect)
@@ -248,6 +276,7 @@ def resolveFrame(sprites,entities,combatTextArr):
         hitby = sprite.spritecollide(enemies[ind], sprites[3], False)
         if hitby and (now - entities[1][ind].lastHit > 250):
             entities[1][ind].lastHit = now
+            healthWas = entities[1][ind].health
             entities[1][ind].health -= hitby[0].dmg
             enemies[ind].velocity = [0,0]
             Movement.coast(enemies[ind], hitby[0].velocity[0]/2.0, hitby[0].velocity[1]/2.0)
@@ -256,38 +285,40 @@ def resolveFrame(sprites,entities,combatTextArr):
                 sprites[3].remove(hitby[0])
                 for hitter in hitby:
                     del hitter
-            if entities[1][ind].health <= 0:
-                enemies[ind].stateVal = 1
             #create combat text to display damage dealt
-            newCombatText = CombatText(str(hitby[0].dmg), enemies[ind].rect.midtop, (255,255,255), 750, 2, now)
-            combatTextArr.append(newCombatText)
+            if enemies[ind].stateVal != 4:
+                newCombatText = CombatText(str(min(hitby[0].dmg,healthWas)), enemies[ind].rect.midtop, (255,255,255), 750, 2, now)
+                combatTextArr.append(newCombatText)
+            if entities[1][ind].health <= 0:
+                enemies[ind].stateVal = 4
 
 
     #health reduction and knockback from enemy contact
-    ouches = sprite.spritecollide(characters[0], sprites[1], False)
-    if ouches and (now - entities[0][0].lastHit > 750):
-        hurts = False
-        for ouch in ouches:
-            if ouch.stateVal != 1:
-                hurts = True
-        if hurts:
-            dmg = 10
-            entities[0][0].lastHit = now
-            entities[0][0].health -= dmg
+    if characters[0].stateVal != 4:
+        ouches = sprite.spritecollide(characters[0], sprites[1], False)
+        if ouches and (now - entities[0][0].lastHit > 750):
+            hurts = False
+            for ouch in ouches:
+                if ouch.stateVal != 4:
+                    hurts = True
+            if hurts:
+                dmg = 10
+                entities[0][0].lastHit = now
+                entities[0][0].health -= dmg
 
-            #keeps char's downward momentum from cancelling knockback if char is falling.
-            characters[0].velocity[1] = 0
-            baddyRect=ouches[0].rect
-            #the vector from the center of the baddy to the center of the PC
-            knockbackDirection = [characters[0].rect.center[0]-baddyRect.center[0],characters[0].rect.center[1]-baddyRect.center[1]]
-            #converted to unit vector
-            knockbackUnit = VectorMath.normalize(knockbackDirection)
-            #magnified for knockback
-            knockback = VectorMath.mult(knockbackUnit,40)
-            Movement.coast(characters[0], knockback[0], knockback[1])            
-            #create combat text to display damage dealt
-            newCombatText = CombatText(str(dmg), characters[0].rect.midtop, (255,0,0), 750, 2, now)
-            combatTextArr.append(newCombatText)
+                #keeps char's downward momentum from cancelling knockback if char is falling.
+                characters[0].velocity[1] = 0
+                baddyRect=ouches[0].rect
+                #the vector from the center of the baddy to the center of the PC
+                knockbackDirection = [characters[0].rect.center[0]-baddyRect.center[0],characters[0].rect.center[1]-baddyRect.center[1]]
+                #converted to unit vector
+                knockbackUnit = VectorMath.normalize(knockbackDirection)
+                #magnified for knockback
+                knockback = VectorMath.mult(knockbackUnit,40)
+                Movement.coast(characters[0], knockback[0], knockback[1])            
+                #create combat text to display damage dealt
+                newCombatText = CombatText(str(dmg), characters[0].rect.midtop, (255,0,0), 750, 2, now)
+                combatTextArr.append(newCombatText)
 
     #if sprite hit the ground or started on the ground, convert it's vertical momentum (ycoast) into lateral momentum (xcoast),
     #may reduce this by some constant factor later for better control feel.
@@ -311,7 +342,7 @@ def physics(sprites,someSprite):
         testsprite.rect.x = someSprite.rect.x
         testsprite.rect.y = someSprite.rect.y
         testsprite.rect = testsprite.rect.move([0,1])
-        if (not sprite.spritecollide(testsprite, sprites[2], False)) and (not testsprite.rect.bottom > height-55):
+        if (not sprite.spritecollide(testsprite, sprites[2], False)) and (not testsprite.rect.bottom > height-50):
             someSprite.falling = True
         del testsprite
         if someSprite.falling == True:
@@ -345,9 +376,9 @@ def physics(sprites,someSprite):
     else:
 
         #keeps someSprite from falling off screen
-        if someSprite.rect.bottom > height-55:
+        if someSprite.rect.bottom > height-50:
             someSprite.velocity[1] = 0
-            someSprite.rect.bottom = height-55
+            someSprite.rect.bottom = height-50
             someSprite.numJumps = 2
             someSprite.falling = False
 

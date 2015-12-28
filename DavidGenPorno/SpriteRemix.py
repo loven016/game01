@@ -29,6 +29,7 @@ class Doodad(SpriteRemix):
 class Background(SpriteRemix):
     def __init__(self, image):
         super().__init__(image)
+        self.lastUpdate = 0
         self.stateVal = 0
         self.velocity = [0,0]
         #self.state = ["static","slowscroll","fastscroll"]
@@ -49,6 +50,7 @@ class CharacterSprite(SpriteRemix):
         self.velocity = [0,0]
         self.numJumps = 1
         self.stateVal = 0
+        #self.state = [idle,running,attack1,attack2,dead]
         self.xflip = False
 
 class PCSprite(CharacterSprite):
@@ -58,10 +60,14 @@ class PCSprite(CharacterSprite):
         self.leftDash = 0
         self.rightDash = 0
         self.numJumps = 2
+
+class UI(SpriteRemix):
+    def __init__(self, image):
+        super().__init__(image)
         
 
 class Projectile(SpriteRemix):
-    def __init__(self, image, origin, dest, name="pcdefaultproj", speed=20, dmg = 40, grav = False, hostile = False, piercing = False):
+    def __init__(self, image, origin, dest, name="pcdefaultproj", speed=20, dmg = 20, grav = False, hostile = False, piercing = False):
         super().__init__(image)
         self.name = name
         self.origin = origin

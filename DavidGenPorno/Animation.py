@@ -49,7 +49,8 @@ class Animation():
 
             elif isinstance(spritesList[i], SpriteRemix.Background):
                 if spritesList[i].stateVal == 1:
-                    if now % 1000 > 16:
+                    if now - spritesList[i].lastUpdate > 48:
+                        spritesList[i].lastUpdate = now
                         spritesList[i].velocity = [1,0]
                     else:
                         spritesList[i].velocity = [0,0]

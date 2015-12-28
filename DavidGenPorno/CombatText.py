@@ -12,8 +12,11 @@ class CombatText():
         self.fadeInterval = fadeInterval
         self.duration = duration
         self.lastAge = currentTime
-        textFont = font.Font(None, 100)
-        self.surface = textFont.render(text, True, color)
+        self.textFont = font.Font(None, 100)
+        self.text = text
+        self.surface = self.textFont.render(text, True, color)
+        self.finalSurf = self.surface
+        self.alpha = 255
         self.rect = self.surface.get_rect()
         self.rect.center = coords
         
@@ -28,10 +31,16 @@ class CombatText():
                 self.lastAge = currentTime
                 if self.rect.center[1] > 0:
                     self.rect.center = (self.rect.center[0], self.rect.center[1] - 1)
+                #NOTE: as far as I can tell, this shit doesn't fucking work. Feel free to fuck around with it.
+                '''self.finalSurf = pygame.Surface((self.rect.width,self.rect.height))
+                self.alpha -= 6
+                self.finalSurf.set_alpha(self.alpha)'''
             return True
         else:
             return False
         
     def draw(self, screen):
+        '''self.finalSurf.blit(self.surface, (0,0))
+        screen.blit(self.finalSurf, self.rect)'''
         screen.blit(self.surface, self.rect)
         

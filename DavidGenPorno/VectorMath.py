@@ -9,7 +9,8 @@ class VectorMath:
         for x in vec:
             someSum += x*x
 
-        return m.sqrt(someSum)
+        #use max to prevent division by 0
+        return max(1,m.sqrt(someSum))
 
     def mult(vec, n):
         outVec = []
