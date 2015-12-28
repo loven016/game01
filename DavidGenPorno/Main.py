@@ -1,0 +1,330 @@
+import sys
+import pygame
+from pygame import *
+#import SpriteRemix
+#from SpriteRemix import *
+from Character import *
+from Movement import *
+from VectorMath import *
+from Animation import *
+
+'''
+TODO: wrap any code doing anything which may need to be done repeatedly or in multiple places
+in functions in appropriate class files.
+'''
+def main():
+    init()
+    global width, height, animator
+    size = width, height = 1920, 1080
+    screen = pygame.display.set_mode(size, FULLSCREEN)
+    gameClock = time.Clock()
+    defaultSprite = image.load("Assets\\sprites\\default.png")
+    animator = Animation()
+    
+    #load default background
+    bg = SpriteRemix.SpriteRemix(image.load("Assets\\backgrounds\shittybackground.png").convert())
+
+    #create cursor and add it to a sprite group, can only hold 1 cursor at a time
+    cursors = pygame.sprite.GroupSingle()
+    crsr = SpriteRemix.Cursor(transform.scale(pygame.image.load("Assets\\sprites\\cursors\\crosshair1.png").convert_alpha(),(70,70)))
+    crsr.add(cursors)
+
+
+    #create pc and add it to a sprite group
+    #TODO: need an initializer class for player that loads projectiles and shit
+    pc = pygame.sprite.Group()
+    playerSprite = SpriteRemix.PCSprite(defaultSprite,"pc")
+    animator.load(playerSprite)
+    animator.animate(playerSprite, 0) #animate 1 frame before staging
+    player = PlayerCharacter(playerSprite)
+    player.sprite.add(pc)
+
+    #create baddies and add them to a sprite group
+    baddies = sprite.Group()
+    baddySprite = SpriteRemix.CharacterSprite(defaultSprite,"notzigrunt")
+    animator.load(baddySprite)
+    animator.animate(baddySprite, 0) #animate 1 frame before staging
+    baddy = NPC(baddySprite)
+    baddy.sprite.add(baddies)
+
+    #create doodads and add them to a sprite group
+    doodads = sprite.Group()
+    '''box = Doodad(pygame.image.load("Assets\\sprites\\doodads\\box.png").convert())
+    alsoBox = Doodad(pygame.image.load("Assets\\sprites\\doodads\\box.png").convert())
+    box.add(doodads)
+    alsoBox.add(doodads)'''
+
+    #initialize projectile sprite group (obv nothing to put here at startup
+    projectiles = sprite.Group()
+
+    #place everything
+    player.sprite.rect.bottom = height
+
+    baddy.sprite.rect.bottom = height
+    baddy.sprite.rect.left = 960
+
+    '''box.rect.left = 540
+    box.rect.bottom = height
+
+    alsoBox.rect.left = 920
+    alsoBox.rect.bottom = height'''
+
+    #create a list of all sprite groups
+    entities = [[player],[baddy]]
+    sprites = [pc, baddies, doodads, projectiles, cursors]
+
+    while 1:
+
+        now = time.get_ticks()
+        #this for loop processes all inputs in the event queue
+        for event in pygame.event.get():
+
+            #close window and quit if x is clicked or esc is pressed
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                quit()
+                sys.exit()
+
+            #track the cursor
+            if event.type == MOUSEMOTION:
+                crsr.rect.centerx = event.pos[0]
+                crsr.rect.centery = event.pos[1]
+
+            #fire projectiles
+            if event.type == MOUSEBUTTONDOWN and event.button == 1 and player.ammo > 0:
+                player.ammo -= 1
+                projLoc = [player.sprite.rect.right, player.sprite.rect.bottom-130]
+                newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=100)
+                animator.load(newProj)
+                newProj.add(projectiles)
+                newProj.rect.center = projLoc
+
+
+            #movement d-right a-left space-jump
+            if event.type == KEYUP and event.key == K_d:
+                player.sprite.rightDash = now
+                Movement.accel(player.sprite, -player.sprite.velocity[0])
+                Movement.coast(player.sprite, player.sprite.velocity[0])
+
+            if event.type == KEYUP and event.key == K_a:
+                player.sprite.leftDash = now
+                Movement.accel(player.sprite, -player.sprite.velocity[0])
+                Movement.coast(player.sprite, player.sprite.velocity[0])
+
+            if event.type == KEYDOWN and event.key == K_d:
+                if now - player.sprite.rightDash > 250:
+                    Movement.accel(player.sprite, 12)
+                else:
+                    Movement.accel(player.sprite, 24)
+                player.sprite.leftDash = 0
+                player.sprite.xflip = False
+
+            if event.type == KEYDOWN and event.key == K_a:
+                if now - player.sprite.leftDash > 250:
+                    Movement.accel(player.sprite, -12)
+                else:
+                    Movement.accel(player.sprite, -24)
+                player.sprite.rightDash = 0
+                player.sprite.xflip = True
+
+            if event.type == KEYDOWN and event.key == K_SPACE:
+                Movement.jump(player.sprite)
+
+        #baddy behavior
+        '''if (now%1000 < 20) and baddy.sprite.stateVal != 1:
+            Movement.jump(baddy.sprite)'''
+
+        #replenish ammo over time
+        if (now %100 < 20) and player.ammo < 4:
+            player.ammo += 1
+
+        #sprites move, but these moves haven't been drawn yet
+        for i in range(len(sprites)-1):
+            groupList = sprites[i].sprites()
+            for aSprite in groupList:
+                if aSprite.xcoast > 0:
+                    if aSprite.xcoast > .6:
+                        aSprite.xcoast += min(-aSprite.xcoast*.1,-.6)
+                    else:
+                        aSprite.xcoast = 0
+                elif aSprite.xcoast < 0:
+                    if aSprite.xcoast < -.6:
+                        aSprite.xcoast += max(-aSprite.xcoast*.1,.6)
+                    else:
+                        aSprite.xcoast = 0
+                if aSprite.ycoast > 0:
+                    if aSprite.ycoast > .6:
+                        aSprite.ycoast += min(-aSprite.ycoast*.1,-.6)
+                    else:
+                        aSprite.ycoast = 0
+                elif aSprite.ycoast < 0:
+                    if aSprite.ycoast < -.6:
+                        aSprite.ycoast += max(-aSprite.ycoast*.1,.6)
+                    else:
+                        aSprite.ycoast = 0
+                aSprite.rect = aSprite.rect.move([aSprite.velocity[0]+aSprite.xcoast,aSprite.velocity[1]+aSprite.ycoast])
+
+
+        #display the player's health
+        defaultText = font.Font(None,100)
+        healthTextSurface = defaultText.render("Player health: " + str(player.health), True, (255,0,0))
+        healthTextRect = healthTextSurface.get_rect()
+        healthTextRect.top = 50
+        healthTextRect.left = 50
+
+        #game over
+        if player.health <= 0:
+            del player
+            quit()
+            print("game over man, game over!")
+            break
+
+
+        #keeps characters in frame and handles collisions
+        resolveFrame(sprites,entities)
+
+        #refresh screen by drawing over previous frame with background
+        screen.blit(bg.image, bg.rect)
+
+        
+        #draw and animate all the rest of the in-use assets
+        for i in range(len(sprites)):
+            #only animate characters so far (i = 0 is pc, i = 1 is baddies)
+            if i <= 1 or i == 3:
+                for aSprite in sprites[i].sprites():
+                    animator.animate(aSprite, now)
+            sprites[i].draw(screen)
+
+        #draw UI last
+        screen.blit(healthTextSurface, healthTextRect)
+
+        gameClock.tick(60)
+
+        
+        enemies = sprites[1].sprites()
+        allDead = True
+        for enemy in enemies:
+            if enemy.stateVal != 1:
+                allDead = False
+        if allDead:
+            defaultText = font.Font(None,200)
+            conglaturationSurface = defaultText.render("Conglaturation", True, (0,0,0))
+            conglaturationRect = conglaturationSurface.get_rect()
+            conglaturationRect.center = (960,540)
+            screen.blit(conglaturationSurface, conglaturationRect)
+
+        pygame.display.flip()
+
+def resolveFrame(sprites,entities):
+    now = time.get_ticks()
+    characters = sprites[0].sprites()
+    enemies = sprites[1].sprites()
+    projs = sprites[3].sprites()
+
+    #projectile damage to enemies
+    for ind in range(len(enemies)):
+        hitby = sprite.spritecollide(enemies[ind], sprites[3], False)
+        if hitby and (now - entities[1][ind].lastHit > 250):
+            entities[1][ind].lastHit = now
+            entities[1][ind].health -= hitby[0].dmg
+            enemies[ind].velocity = [0,0]
+            Movement.coast(enemies[ind], hitby[0].velocity[0]/2.0, hitby[0].velocity[1]/2.0)
+            if not hitby[0].piercing:
+                animator.inuse[hitby[0].id] = []
+                sprites[3].remove(hitby[0])
+                for hitter in hitby:
+                    del hitter
+            if entities[1][ind].health <= 0:
+                enemies[ind].stateVal = 1
+
+
+
+    #health reduction and knockback from enemy contact
+    ouches = sprite.spritecollide(characters[0], sprites[1], False)
+    if ouches and (now - entities[0][0].lastHit > 750):
+        hurts = False
+        for ouch in ouches:
+            if ouch.stateVal != 1:
+                hurts = True
+        if hurts:
+            entities[0][0].lastHit = now
+
+            entities[0][0].health -= 10
+
+            #keeps char's downward momentum from cancelling knockback if char is falling.
+            characters[0].velocity[1] = 0
+            baddyRect=ouches[0].rect
+            #the vector from the center of the baddy to the center of the PC
+            knockbackDirection = [characters[0].rect.center[0]-baddyRect.center[0],characters[0].rect.center[1]-baddyRect.center[1]]
+            #converted to unit vector
+            knockbackUnit = VectorMath.normalize(knockbackDirection)
+            #magnified for knockback
+            knockback = VectorMath.mult(knockbackUnit,40)
+            Movement.coast(characters[0], knockback[0], knockback[1])
+
+    #if sprite hit the ground or started on the ground, convert it's vertical momentum (ycoast) into lateral momentum (xcoast),
+    #may reduce this by some constant factor later for better control feel.
+    if not characters[0].falling:
+        if characters[0].xcoast > 0:
+            characters[0].xcoast = VectorMath.magnitude([characters[0].xcoast,abs(characters[0].ycoast)])
+        if characters[0].xcoast < 0:
+            characters[0].xcoast = -(VectorMath.magnitude([characters[0].xcoast,abs(characters[0].ycoast)]))
+        characters[0].ycoast = 0
+
+    #if characters[0].xcoast: print(characters[0].xcoast)#VectorMath.magnitude([characters[0].xcoast,characters[0].ycoast]))
+    physics(sprites,characters[0])
+
+    for enemy in enemies + projs:
+        physics(sprites,enemy)
+
+def physics(sprites,someSprite):
+    #gravity (make shit fall)
+    if not isinstance(someSprite, SpriteRemix.Projectile) or someSprite.grav:
+        testsprite = SpriteRemix.SpriteRemix(someSprite.image)
+        testsprite.rect.x = someSprite.rect.x
+        testsprite.rect.y = someSprite.rect.y
+        testsprite.rect = testsprite.rect.move([0,1])
+        if (not sprite.spritecollide(testsprite, sprites[2], False)) and (not testsprite.rect.bottom > height):
+            someSprite.falling = True
+        del testsprite
+        if someSprite.falling == True:
+            someSprite.velocity[1] += (max(abs(someSprite.velocity[1])*.05,1.6))
+
+    #generate list of all doodads someSprite is colliding with and uncollide it with them
+    collideds = sprite.spritecollide(someSprite, sprites[2], False)
+    for doodad in collideds:
+        #someSprite's bottom has collided while falling
+        if someSprite.rect.bottom > doodad.rect.top and someSprite.rect.bottom <= doodad.rect.top+someSprite.velocity[1]+someSprite.ycoast\
+        and someSprite.falling :
+            someSprite.rect.bottom = doodad.rect.top
+            someSprite.numJumps = 2
+            someSprite.velocity[1] = 0
+            someSprite.falling = False
+
+        elif someSprite.rect.right > doodad.rect.left and someSprite.rect.right <= doodad.rect.left+someSprite.velocity[0]+someSprite.xcoast:
+            someSprite.rect.right = doodad.rect.left-1
+        elif someSprite.rect.left < doodad.rect.right and someSprite.rect.left >= doodad.rect.right+someSprite.velocity[0]+someSprite.ycoast:
+            someSprite.rect.left = doodad.rect.right+1
+
+    #destroy off-screen projectiles
+    if isinstance(someSprite, SpriteRemix.Projectile):
+        if someSprite.rect.top > height or\
+           someSprite.rect.bottom < 0 or\
+           someSprite.rect.left > width or\
+           someSprite.rect.right < 0:
+            animator.inuse[someSprite.id] = []
+            sprites[3].remove(someSprite)
+
+    else:
+
+        #keeps someSprite from falling off screen
+        if someSprite.rect.bottom > height:
+            someSprite.velocity[1] = 0
+            someSprite.rect.bottom = height
+            someSprite.numJumps = 2
+            someSprite.falling = False
+
+        #keeps someSprite from walking off screen
+        if someSprite.rect.left < 0:
+            someSprite.rect.left = 0
+        elif someSprite.rect.right > width:
+            someSprite.rect.right = width
