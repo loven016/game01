@@ -3,7 +3,8 @@ import pygame
 from pygame import *
 #import SpriteRemix
 #from SpriteRemix import *
-from Character import *
+from Character import PlayerCharacterSprite
+from Character import EnemyCharacterSprite
 from Movement import *
 from VectorMath import *
 from Animation import *
@@ -20,7 +21,8 @@ def main():
     size = width, height = 1920, 1080
     screen = pygame.display.set_mode(size, FULLSCREEN)
     gameClock = time.Clock()
-    defaultSprite = image.load("Assets\\sprites\\default.png")
+    defaultSpriteImg = "Assets\\sprites\\default.png"
+    defaultSprite = image.load(defaultSpriteImg)
     animator = Animation()
     
     #load default background
@@ -48,24 +50,22 @@ def main():
     #create pc and add it to a sprite group
     #TODO: need an initializer class for player that loads projectiles and weapons and shit
     pc = pygame.sprite.Group()
-    playerSprite = SpriteRemix.PCSprite(defaultSprite, "pc")
+    playerSprite = PlayerCharacterSprite(defaultSpriteImg,"pc")
     animator.load(playerSprite)
-    player = PlayerCharacter(playerSprite)
-    player.sprite.add(pc)
+    playerSprite.add(pc)
     
     #weapon, this shit is fucking retarded
     pcAccessory = pygame.sprite.Group()
-    playerWeapon = SpriteRemix.PCSprite(defaultSprite, "weapon")
+    playerWeapon = PlayerCharacterSprite(defaultSpriteImg, "weapon")
     animator.load(playerWeapon)
     playerWeapon.add(pcAccessory)
 
     
     #create baddies and add them to a sprite group
     baddies = sprite.Group()
-    baddySprite = SpriteRemix.CharacterSprite(defaultSprite,"notzigrunt")
+    baddySprite = EnemyCharacterSprite(defaultSpriteImg,"notzigrunt")
     animator.load(baddySprite)
-    baddy = NPC(baddySprite)
-    baddy.sprite.add(baddies)
+    baddySprite.add(baddies)
 
     #create doodads and add them to a sprite group
     doodads = sprite.Group()
@@ -87,11 +87,11 @@ def main():
     healthbar.rect.topleft = [50,50]
     health.rect.topleft = [healthbar.rect.left+239, healthbar.rect.top+5]
     
-    player.sprite.rect.bottomleft = [100,height-50]
-    playerWeapon.rect.midright = player.sprite.rect.midleft
+    playerSprite.rect.bottomleft = [100,height-50]
+    playerWeapon.rect.midright = playerSprite.rect.midleft
 
-    baddy.sprite.rect.bottom = height
-    baddy.sprite.rect.left = 960
+    baddySprite.rect.bottom = height
+    baddySprite.rect.left = 960
 
     '''box.rect.left = 540
     box.rect.bottom = height
@@ -99,7 +99,7 @@ def main():
     alsoBox.rect.bottom = height'''
 
     #create a list of all sprite groups
-    entities = [[player],[baddy]]
+    entities = [pc.sprites(), baddies.sprites()]
     sprites = [pc, pcAccessory, baddies, doodads, projectiles, background, ui, cursors]
 
     while 1:
@@ -120,62 +120,62 @@ def main():
                 crsr.rect.centery = event.pos[1]
 
             #only control pc if pc not dead
-            if player.sprite.stateVal != 4:
+            if playerSprite.stateVal != 4:
                 
                 #fire projectiles
-                if event.type == MOUSEBUTTONDOWN and event.button == 1 and player.ammo > 0 and now - player.sprite.lastShot > 250:
-                    player.ammo -= 1
-                    projLoc = [player.sprite.rect.right, player.sprite.rect.bottom-130]
+                if event.type == MOUSEBUTTONDOWN and event.button == 1 and playerSprite.ammo > 0 and now - playerSprite.lastShot > 250:
+                    playerSprite.ammo -= 1
+                    projLoc = [playerSprite.rect.right, playerSprite.rect.bottom-130]
                     newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=45)
                     animator.load(newProj)
                     newProj.add(projectiles)
                     newProj.rect.center = projLoc
-                    player.sprite.lastShot = now
+                    playerSprite.lastShot = now
 
 
                 #movement d-right a-left space-jump
                 if event.type == KEYUP and event.key == K_d:
-                    player.sprite.rightDash = now
-                    Movement.accel(player.sprite, -player.sprite.velocity[0])
-                    Movement.coast(player.sprite, player.sprite.velocity[0])
+                    playerSprite.rightDash = now
+                    Movement.accel(playerSprite, -playerSprite.velocity[0])
+                    Movement.coast(playerSprite, playerSprite.velocity[0])
 
                 if event.type == KEYUP and event.key == K_a:
-                    player.sprite.leftDash = now
-                    Movement.accel(player.sprite, -player.sprite.velocity[0])
-                    Movement.coast(player.sprite, player.sprite.velocity[0])
+                    playerSprite.leftDash = now
+                    Movement.accel(playerSprite, -playerSprite.velocity[0])
+                    Movement.coast(playerSprite, playerSprite.velocity[0])
 
                 if event.type == KEYDOWN and event.key == K_d:
-                    if now - player.sprite.rightDash > 250:
-                        Movement.accel(player.sprite, 12)
+                    if now - playerSprite.rightDash > 250:
+                        Movement.accel(playerSprite, 12)
                     else:
-                        Movement.accel(player.sprite, 24)
-                    player.sprite.leftDash = 0
-                    player.sprite.xflip = False
+                        Movement.accel(playerSprite, 24)
+                    playerSprite.leftDash = 0
+                    playerSprite.xflip = False
 
                 if event.type == KEYDOWN and event.key == K_a:
-                    if now - player.sprite.leftDash > 250:
-                        Movement.accel(player.sprite, -12)
+                    if now - playerSprite.leftDash > 250:
+                        Movement.accel(playerSprite, -12)
                     else:
-                        Movement.accel(player.sprite, -24)
-                    player.sprite.rightDash = 0
-                    player.sprite.xflip = True
+                        Movement.accel(playerSprite, -24)
+                    playerSprite.rightDash = 0
+                    playerSprite.xflip = True
 
                 if event.type == KEYDOWN and event.key == K_SPACE:
-                    Movement.jump(player.sprite)
+                    Movement.jump(playerSprite)
 
             #ragdoll pc
             else:
-                player.sprite.xcoast = player.sprite.velocity[0]
-                player.sprite.ycoast = player.sprite.velocity[1]
-                player.sprite.velocity = [0,0]
+                playerSprite.xcoast = playerSprite.velocity[0]
+                playerSprite.ycoast = playerSprite.velocity[1]
+                playerSprite.velocity = [0,0]
 
         #baddy behavior
-        '''if (now%1000 < 20) and baddy.sprite.stateVal != 1:
-            Movement.jump(baddy.sprite)'''
+        '''if (now%1000 < 20) and baddySprite.stateVal != 1:
+            Movement.jump(baddySprite)'''
 
         #replenish ammo over time
-        if (now %100 < 20) and player.ammo < 4:
-            player.ammo += 1
+        if (now %100 < 20) and playerSprite.ammo < 4:
+            playerSprite.ammo += 1
 
         #sprites move, but these moves haven't been drawn yet
         for i in range(len(sprites)-2):
@@ -207,7 +207,7 @@ def main():
         #display the player's health
         """
         defaultText = font.Font(None,100)
-        healthTextSurface = defaultText.render("Player health: " + str(player.health), True, (255,0,0))
+        healthTextSurface = defaultText.render("Player health: " + str(playerSprite.health), True, (255,0,0))
         healthTextRect = healthTextSurface.get_rect()
         healthTextRect.top = 50
         healthTextRect.left = 50
@@ -223,11 +223,11 @@ def main():
 
 
         #position the pc's weapon
-        if player.sprite.xflip:
-            sprites[1].sprites()[0].rect.midleft = [player.sprite.rect.midright[0],player.sprite.rect.midright[1]+58]
+        if playerSprite.xflip:
+            sprites[1].sprites()[0].rect.midleft = [playerSprite.rect.midright[0],playerSprite.rect.midright[1]+58]
             sprites[1].sprites()[0].xflip = True
         else:
-            sprites[1].sprites()[0].rect.midright = [player.sprite.rect.midleft[0],player.sprite.rect.midleft[1]+58]
+            sprites[1].sprites()[0].rect.midright = [playerSprite.rect.midleft[0],playerSprite.rect.midleft[1]+58]
             sprites[1].sprites()[0].xflip = False
 
         #only animate characters and projectiles so far (i = 0 is pc, i = 1 is baddies, i = 3 is projectiles, i = 4 is background)
@@ -247,7 +247,7 @@ def main():
 
         #draw UI last
         #screen.blit(healthTextSurface, healthTextRect)
-        if health.rect.width > 596*player.health/100:
+        if health.rect.width > 596*playerSprite.health/100:
             health.image = transform.scale(health.image, (max(0,health.rect.width-3),health.rect.height))
             health.rect = health.image.get_rect()
             health.rect.topleft = (289,56) #tempHealthTopLeft
@@ -258,13 +258,13 @@ def main():
 
 
         #game over check
-        if player.health <= 0:
+        if playerSprite.health <= 0:
             defaultText = font.Font(None,120)
             gameOverSurface = defaultText.render("Game Over man, Game Over!", True, (255,0,0))
             gameOverRect = gameOverSurface.get_rect()
             gameOverRect.center = (960,540)
             screen.blit(gameOverSurface, gameOverRect)
-            player.sprite.stateVal = 4
+            playerSprite.stateVal = 4
 
         #victory check
         enemies = sprites[2].sprites()

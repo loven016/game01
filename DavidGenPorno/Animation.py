@@ -1,6 +1,7 @@
 import pygame
 from pygame import *
 import SpriteRemix
+from Character import CharacterSprite
 
 class Animation():
     def __init__(self):
@@ -11,7 +12,7 @@ class Animation():
         for j in range(len(spritesList)):
                 
             for i in range(len(spritesList[j])):
-                if isinstance(spritesList[j][i], SpriteRemix.CharacterSprite):
+                if isinstance(spritesList[j][i], CharacterSprite):
                     tempLoc = spritesList[j][i].rect.bottomleft
                     if spritesList[j][i].name == "pc":
                         #TODO: A whole fuckin' lot. State handling for PC as well as sprites for PC, etc. etc. etc.
@@ -78,7 +79,7 @@ class Animation():
             self.count += 1
             sprite.id = self.count
         
-        if isinstance(sprite, SpriteRemix.CharacterSprite):
+        if isinstance(sprite, CharacterSprite):
             if sprite.name == "pc":
                 pc = [\
                     transform.scale(image.load("Assets\\sprites\\pc\\pcready1.png").convert_alpha(),(94,209))\
