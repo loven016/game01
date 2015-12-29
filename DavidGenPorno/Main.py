@@ -46,19 +46,24 @@ def main():
 
 
     #create pc and add it to a sprite group
-    #TODO: need an initializer class for player that loads projectiles and shit
+    #TODO: need an initializer class for player that loads projectiles and weapons and shit
     pc = pygame.sprite.Group()
-    playerSprite = SpriteRemix.PCSprite(defaultSprite,"pc")
+    playerSprite = SpriteRemix.PCSprite(defaultSprite, "pc")
     animator.load(playerSprite)
     player = PlayerCharacter(playerSprite)
     player.sprite.add(pc)
-    #animator.animate(playerSprite, 0) #animate 1 frame before staging
+    
+    #weapon, this shit is fucking retarded
+    pcAccessory = pygame.sprite.Group()
+    playerWeapon = SpriteRemix.PCSprite(defaultSprite, "weapon")
+    animator.load(playerWeapon)
+    playerWeapon.add(pcAccessory)
 
+    
     #create baddies and add them to a sprite group
     baddies = sprite.Group()
     baddySprite = SpriteRemix.CharacterSprite(defaultSprite,"notzigrunt")
     animator.load(baddySprite)
-    #animator.animate(baddySprite, 0) #animate 1 frame before staging
     baddy = NPC(baddySprite)
     baddy.sprite.add(baddies)
 
@@ -82,7 +87,8 @@ def main():
     healthbar.rect.topleft = [50,50]
     health.rect.topleft = [healthbar.rect.left+239, healthbar.rect.top+5]
     
-    player.sprite.rect.bottom = height
+    player.sprite.rect.bottomleft = [100,height-50]
+    playerWeapon.rect.midright = player.sprite.rect.midleft
 
     baddy.sprite.rect.bottom = height
     baddy.sprite.rect.left = 960
@@ -94,7 +100,7 @@ def main():
 
     #create a list of all sprite groups
     entities = [[player],[baddy]]
-    sprites = [pc, baddies, doodads, projectiles, background, ui, cursors]
+    sprites = [pc, pcAccessory, baddies, doodads, projectiles, background, ui, cursors]
 
     while 1:
 
@@ -115,14 +121,16 @@ def main():
 
             #only control pc if pc not dead
             if player.sprite.stateVal != 4:
+                
                 #fire projectiles
-                if event.type == MOUSEBUTTONDOWN and event.button == 1 and player.ammo > 0:
+                if event.type == MOUSEBUTTONDOWN and event.button == 1 and player.ammo > 0 and now - player.sprite.lastShot > 250:
                     player.ammo -= 1
                     projLoc = [player.sprite.rect.right, player.sprite.rect.bottom-130]
-                    newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=60)
+                    newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=45)
                     animator.load(newProj)
                     newProj.add(projectiles)
                     newProj.rect.center = projLoc
+                    player.sprite.lastShot = now
 
 
                 #movement d-right a-left space-jump
@@ -213,14 +221,17 @@ def main():
         screen.blit(bg1.image, bg1.rect)
         screen.blit(bg2.image, bg2.rect)
 
-        
-        #draw and animate all the rest of the in-use assets
-        for i in range(len(sprites)):
-            #only animate characters and projectiles so far (i = 0 is pc, i = 1 is baddies, i = 3 is projectiles, i = 4 is background)
-            if i <= 1 or i == 3 or i == 4:
-                animator.animate(sprites[i].sprites(), now)
-            if i != 4:
-                sprites[i].draw(screen)
+
+        #position the pc's weapon
+        if player.sprite.xflip:
+            sprites[1].sprites()[0].rect.midleft = [player.sprite.rect.midright[0],player.sprite.rect.midright[1]+58]
+            sprites[1].sprites()[0].xflip = True
+        else:
+            sprites[1].sprites()[0].rect.midright = [player.sprite.rect.midleft[0],player.sprite.rect.midleft[1]+58]
+            sprites[1].sprites()[0].xflip = False
+
+        #only animate characters and projectiles so far (i = 0 is pc, i = 1 is baddies, i = 3 is projectiles, i = 4 is background)
+        animator.animate([sprites[0].sprites(), sprites[1].sprites(), sprites[2].sprites(), sprites[4].sprites(), sprites[5].sprites()], now)
             
         #draw active CombatText objects and remove faded ones
         for combatText in combatTextArr[:]:
@@ -228,6 +239,11 @@ def main():
                 combatText.draw(screen)
             else:
                 combatTextArr.remove(combatText)
+
+        #draw all the rest of the in-use assets
+        for i in range(len(sprites)):
+            if i != 5: #don't draw UI
+                sprites[i].draw(screen)
 
         #draw UI last
         #screen.blit(healthTextSurface, healthTextRect)
@@ -251,7 +267,7 @@ def main():
             player.sprite.stateVal = 4
 
         #victory check
-        enemies = sprites[1].sprites()
+        enemies = sprites[2].sprites()
         allDead = True
         for enemy in enemies:
             if enemy.stateVal != 4:
@@ -268,12 +284,12 @@ def main():
 def resolveFrame(sprites,entities,combatTextArr):
     now = time.get_ticks()
     characters = sprites[0].sprites()
-    enemies = sprites[1].sprites()
-    projs = sprites[3].sprites()
+    enemies = sprites[2].sprites()
+    projs = sprites[4].sprites()
 
     #projectile damage to enemies
     for ind in range(len(enemies)):
-        hitby = sprite.spritecollide(enemies[ind], sprites[3], False)
+        hitby = sprite.spritecollide(enemies[ind], sprites[4], False)
         if hitby and (now - entities[1][ind].lastHit > 250):
             entities[1][ind].lastHit = now
             healthWas = entities[1][ind].health
@@ -282,7 +298,7 @@ def resolveFrame(sprites,entities,combatTextArr):
             Movement.coast(enemies[ind], hitby[0].velocity[0]/2.0, hitby[0].velocity[1]/2.0)
             if not hitby[0].piercing:
                 animator.inuse[hitby[0].id] = []
-                sprites[3].remove(hitby[0])
+                sprites[4].remove(hitby[0])
                 for hitter in hitby:
                     del hitter
             #create combat text to display damage dealt
@@ -295,7 +311,7 @@ def resolveFrame(sprites,entities,combatTextArr):
 
     #health reduction and knockback from enemy contact
     if characters[0].stateVal != 4:
-        ouches = sprite.spritecollide(characters[0], sprites[1], False)
+        ouches = sprite.spritecollide(characters[0], sprites[2], False)
         if ouches and (now - entities[0][0].lastHit > 750):
             hurts = False
             for ouch in ouches:
@@ -330,10 +346,10 @@ def resolveFrame(sprites,entities,combatTextArr):
         characters[0].ycoast = 0
 
     #if characters[0].xcoast: print(characters[0].xcoast)#VectorMath.magnitude([characters[0].xcoast,characters[0].ycoast]))
-    physics(sprites,characters[0])
+    #physics(sprites,characters[0])
 
-    for enemy in enemies + projs:
-        physics(sprites,enemy)
+    for aSprite in characters[:1] + enemies + projs:
+        physics(sprites,aSprite)
 
 def physics(sprites,someSprite):
     #gravity (make shit fall)
@@ -371,7 +387,7 @@ def physics(sprites,someSprite):
            someSprite.rect.left > width or\
            someSprite.rect.right < 0:
             animator.inuse[someSprite.id] = []
-            sprites[3].remove(someSprite)
+            sprites[4].remove(someSprite)
 
     else:
 

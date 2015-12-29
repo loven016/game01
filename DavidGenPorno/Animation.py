@@ -4,59 +4,69 @@ import SpriteRemix
 
 class Animation():
     def __init__(self):
-        self.inuse = []
-        self.count = -1
+        self.inuse = [] #list of lists of images belonging to a sprite
+        self.count = -1 #cardinality of inuse (first added element must have 0th index)
     def animate(self, spritesList, now):
-        
-        for i in range(len(spritesList)):
-            if isinstance(spritesList[i], SpriteRemix.CharacterSprite):
-                tempLoc = spritesList[i].rect.bottomleft
-                if spritesList[i].name == "pc":
-                    #TODO: A whole fuckin' lot. State handling for PC as well as sprites for PC, etc. etc. etc.
-                    if spritesList[i].stateVal == 0: #idle animation
-                        if now % 1500 > 750:                    
-                            spritesList[i].setImage(self.inuse[spritesList[i].id][0])
-                        elif now % 1500 > 400 or now % 1500 <= 150:
-                            spritesList[i].setImage(self.inuse[spritesList[i].id][1])
+
+        for j in range(len(spritesList)):
+                
+            for i in range(len(spritesList[j])):
+                if isinstance(spritesList[j][i], SpriteRemix.CharacterSprite):
+                    tempLoc = spritesList[j][i].rect.bottomleft
+                    if spritesList[j][i].name == "pc":
+                        #TODO: A whole fuckin' lot. State handling for PC as well as sprites for PC, etc. etc. etc.
+                        if spritesList[j][i].stateVal == 1: #ready animation
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
+                        '''if spritesList[j][i].stateVal == 0: #idle animation
+                            if now % 1500 > 750:                    
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
+                            elif now % 1500 > 400 or now % 1500 <= 150:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][1])
+                            else:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][2])
+                        '''
+                    elif spritesList[j][i].name == "weapon":
+                        if spritesList[j][i].stateVal == 1:
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
+                            #this doesn't work, and I don't know why. Altering value instead of object perhaps?
+                            '''spritesList[j][i].rect.midright = spritesList[0][0].rect.midleft'''
+                    elif spritesList[j][i].name == "notzigrunt":
+                        if spritesList[j][i].stateVal == 0:
+                            if now % 1500 < 250:
+                                
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][1])
+                                
+                            else:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
                         else:
-                            spritesList[i].setImage(self.inuse[spritesList[i].id][2])
-                            
-                elif spritesList[i].name == "notzigrunt":
-                    if spritesList[i].stateVal == 0:
-                        if now % 1500 < 250:
-                            
-                            spritesList[i].setImage(self.inuse[spritesList[i].id][1])
-                            
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][2])
+
+                    if spritesList[j][i].xflip:
+                        spritesList[j][i].setImage(transform.flip(spritesList[j][i].image, True, False))
+
+                    spritesList[j][i].rect.bottomleft = tempLoc
+
+
+                elif isinstance(spritesList[j][i], SpriteRemix.Projectile):
+                    tempLoc = spritesList[j][i].rect.center
+                    if spritesList[j][i].stateVal == 1:
+                        tempImage = transform.rotate(self.inuse[spritesList[j][i].id][0],-90)
+                        self.inuse[spritesList[j][i].id][0] = self.inuse[spritesList[j][i].id][1]
+                        self.inuse[spritesList[j][i].id][1] = tempImage
+                        spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
+                        print(tempImage)
+                    spritesList[j][i].rect.center = tempLoc
+
+                elif isinstance(spritesList[j][i], SpriteRemix.Background):
+                    if spritesList[j][i].stateVal == 1:
+                        if now - spritesList[j][i].lastUpdate > 48:
+                            spritesList[j][i].lastUpdate = now
+                            spritesList[j][i].velocity = [1,0]
                         else:
-                            spritesList[i].setImage(self.inuse[spritesList[i].id][0])
-                    else:
-                        spritesList[i].setImage(self.inuse[spritesList[i].id][2])
-
-                if spritesList[i].xflip:
-                    spritesList[i].setImage(transform.flip(spritesList[i].image, True, False))
-
-                spritesList[i].rect.bottomleft = tempLoc
-
-
-            elif isinstance(spritesList[i], SpriteRemix.Projectile):
-                tempLoc = spritesList[i].rect.center
-                if spritesList[i].stateVal == 1:
-                    tempImage = transform.rotate(self.inuse[spritesList[i].id][0],-90)
-                    self.inuse[spritesList[i].id][0] = tempImage = transform.rotate(self.inuse[spritesList[i].id][1],-90)
-                    self.inuse[spritesList[i].id][1] = tempImage
-                    spritesList[i].setImage(self.inuse[spritesList[i].id][0])
-                spritesList[i].rect.center = tempLoc
-
-            elif isinstance(spritesList[i], SpriteRemix.Background):
-                if spritesList[i].stateVal == 1:
-                    if now - spritesList[i].lastUpdate > 48:
-                        spritesList[i].lastUpdate = now
-                        spritesList[i].velocity = [1,0]
-                    else:
-                        spritesList[i].velocity = [0,0]
-                    if spritesList[i].rect.left >= 1920:
-                        spritesList[i].rect.right = 0
-                                         
+                            spritesList[j][i].velocity = [0,0]
+                        if spritesList[j][i].rect.left >= 1920:
+                            spritesList[j][i].rect.right = 0
+                                             
     def load(self, sprite):
 
         #look for spot in inuse to store new sprite data, if no empty spots, append to the end
@@ -72,14 +82,20 @@ class Animation():
         if isinstance(sprite, SpriteRemix.CharacterSprite):
             if sprite.name == "pc":
                 pc = [\
-                    transform.scale(image.load("Assets\\sprites\\pc\\pcidle1.png").convert_alpha(),(144,216)),\
-                    transform.scale(image.load("Assets\\sprites\\pc\\pcidle2.png").convert_alpha(),(144,219)),\
-                    transform.scale(image.load("Assets\\sprites\\pc\\pcidle3.png").convert_alpha(),(144,221 ))\
+                    transform.scale(image.load("Assets\\sprites\\pc\\pcready1.png").convert_alpha(),(94,209))\
                 ]
                 if overWrite: #0 is PC and is never deleted
                     self.inuse[overWrite] = pc
                 else:
                     self.inuse.append(pc)
+            elif sprite.name == "weapon":
+                pcweapon = [\
+                    transform.scale(image.load("Assets\\sprites\\pc\\pcreadyscythe1.png").convert_alpha(),(84,92))\
+                ]
+                if overWrite:
+                    self.inuse[overWrite] = pcweapon
+                else:
+                    self.inuse.append(pcweapon)
 
             elif sprite.name == "notzigrunt":
                 notzigrunt = [\

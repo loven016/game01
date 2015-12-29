@@ -50,7 +50,8 @@ class CharacterSprite(SpriteRemix):
         self.velocity = [0,0]
         self.numJumps = 1
         self.stateVal = 0
-        #self.state = [idle,running,attack1,attack2,dead]
+        self.lastShot = 0 #last time the unit fired a projectile
+        #self.state = [idle,ready,running,attack,dead]
         self.xflip = False
 
 class PCSprite(CharacterSprite):
@@ -60,6 +61,7 @@ class PCSprite(CharacterSprite):
         self.leftDash = 0
         self.rightDash = 0
         self.numJumps = 2
+        self.stateVal = 1
 
 class UI(SpriteRemix):
     def __init__(self, image):
