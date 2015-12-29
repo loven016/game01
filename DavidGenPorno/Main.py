@@ -365,7 +365,7 @@ def physics(sprites,someSprite):
             someSprite.velocity[1] += (max(abs(someSprite.velocity[1])*.05,1.6))
 
     #generate list of all doodads someSprite is colliding with and uncollide it with them
-    collideds = sprite.spritecollide(someSprite, sprites[2], False)
+    collideds = sprite.spritecollide(someSprite, sprites[3], False)
     for doodad in collideds:
         #someSprite's bottom has collided while falling
         if someSprite.rect.bottom > doodad.rect.top and someSprite.rect.bottom <= doodad.rect.top+someSprite.velocity[1]+someSprite.ycoast\

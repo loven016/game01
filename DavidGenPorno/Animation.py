@@ -54,7 +54,6 @@ class Animation():
                         self.inuse[spritesList[j][i].id][0] = self.inuse[spritesList[j][i].id][1]
                         self.inuse[spritesList[j][i].id][1] = tempImage
                         spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
-                        print(tempImage)
                     spritesList[j][i].rect.center = tempLoc
 
                 elif isinstance(spritesList[j][i], SpriteRemix.Background):
