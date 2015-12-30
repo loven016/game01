@@ -21,8 +21,6 @@ def main():
     size = width, height = 1920, 1080
     screen = pygame.display.set_mode(size, FULLSCREEN)
     gameClock = time.Clock()
-    defaultSpriteImg = "Assets\\sprites\\default.png"
-    defaultSprite = image.load(defaultSpriteImg)
     animator = Animation()
     
     #load default background
@@ -50,20 +48,20 @@ def main():
     #create pc and add it to a sprite group
     #TODO: need an initializer class for player that loads projectiles and weapons and shit
     pc = pygame.sprite.Group()
-    playerSprite = PlayerCharacterSprite(defaultSpriteImg,"pc")
+    playerSprite = PlayerCharacterSprite()
     animator.load(playerSprite)
     playerSprite.add(pc)
     
     #weapon, this shit is fucking retarded
     pcAccessory = pygame.sprite.Group()
-    playerWeapon = PlayerCharacterSprite(defaultSpriteImg, "weapon")
+    playerWeapon = SpriteRemix.Weapon()
     animator.load(playerWeapon)
     playerWeapon.add(pcAccessory)
 
     
     #create baddies and add them to a sprite group
     baddies = sprite.Group()
-    baddySprite = EnemyCharacterSprite(defaultSpriteImg,"notzigrunt")
+    baddySprite = EnemyCharacterSprite("notzigrunt")
     animator.load(baddySprite)
     baddySprite.add(baddies)
 
@@ -107,8 +105,10 @@ def main():
         now = time.get_ticks()
         
         #this for loop processes all inputs in the event queue
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        for event in events:
 
+            idle = True
             #close window and quit if x is clicked or esc is pressed
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 quit()
@@ -120,29 +120,24 @@ def main():
                 crsr.rect.centery = event.pos[1]
 
             #only control pc if pc not dead
-            if playerSprite.stateVal != 4:
-                
-                #fire projectiles
-                if event.type == MOUSEBUTTONDOWN and event.button == 1 and playerSprite.ammo > 0 and now - playerSprite.lastShot > 250:
-                    playerSprite.ammo -= 1
-                    projLoc = [playerSprite.rect.right, playerSprite.rect.bottom-130]
-                    newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=45)
-                    animator.load(newProj)
-                    newProj.add(projectiles)
-                    newProj.rect.center = projLoc
-                    playerSprite.lastShot = now
+            if playerSprite.stateVal < 6:
 
+                
 
                 #movement d-right a-left space-jump
                 if event.type == KEYUP and event.key == K_d:
                     playerSprite.rightDash = now
                     Movement.accel(playerSprite, -playerSprite.velocity[0])
                     Movement.coast(playerSprite, playerSprite.velocity[0])
+                    playerSprite.idleTime = 0
+                    idle = False
 
                 if event.type == KEYUP and event.key == K_a:
                     playerSprite.leftDash = now
                     Movement.accel(playerSprite, -playerSprite.velocity[0])
                     Movement.coast(playerSprite, playerSprite.velocity[0])
+                    playerSprite.idleTime = 0
+                    idle = False
 
                 if event.type == KEYDOWN and event.key == K_d:
                     if now - playerSprite.rightDash > 250:
@@ -151,6 +146,9 @@ def main():
                         Movement.accel(playerSprite, 24)
                     playerSprite.leftDash = 0
                     playerSprite.xflip = False
+                    playerSprite.stateVal = 2
+                    playerSprite.idleTime = 0
+                    idle = False
 
                 if event.type == KEYDOWN and event.key == K_a:
                     if now - playerSprite.leftDash > 250:
@@ -159,15 +157,53 @@ def main():
                         Movement.accel(playerSprite, -24)
                     playerSprite.rightDash = 0
                     playerSprite.xflip = True
+                    playerSprite.stateVal = 2
+                    playerSprite.idleTime = 0
+                    idle = False
 
                 if event.type == KEYDOWN and event.key == K_SPACE:
                     Movement.jump(playerSprite)
+                    playerSprite.stateVal = 4
+                    playerSprite.idleTime = 0
+                    idle = False
+
+
+                #melee attack
+                if event.type == MOUSEBUTTONDOWN and event.button == 1 and now - playerSprite.lastMelee > 300:
+                    playerSprite.stateVal = 3
+                    playerSprite.lastMelee = now
+                    playerSprite.idleTime = 0
+                    playerWeapon.hostile = True
+                    idle = False
+
+                if event.type == MOUSEBUTTONUP and event.button == 1:
+                    playerWeapon.hostile = False
+                
+                #ranged attack
+                if event.type == MOUSEBUTTONDOWN and event.button == 2 and playerSprite.ammo > 0 and now - playerSprite.lastShot > 250:
+                    playerSprite.ammo -= 1
+                    projLoc = [playerSprite.rect.right, playerSprite.rect.bottom-130]
+                    newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=45)
+                    animator.load(newProj)
+                    newProj.add(projectiles)
+                    newProj.rect.center = projLoc
+                    playerSprite.lastShot = now
+                    playerSprite.stateVal = 3
+                    playerSprite.idleTime = 0
+                    idle = False
 
             #ragdoll pc
             else:
                 playerSprite.xcoast = playerSprite.velocity[0]
                 playerSprite.ycoast = playerSprite.velocity[1]
                 playerSprite.velocity = [0,0]
+
+        if idle:
+            playerSprite.idleTime += gameClock.get_time()
+            if playerSprite.idleTime >= 2000:
+                playerSprite.stateVal = 0
+            elif playerSprite.idleTime >= 300:
+                playerSprite.stateVal = 1
 
         #baddy behavior
         '''if (now%1000 < 20) and baddySprite.stateVal != 1:
@@ -204,15 +240,6 @@ def main():
                 aSprite.rect = aSprite.rect.move([aSprite.velocity[0]+aSprite.xcoast,aSprite.velocity[1]+aSprite.ycoast])
 
 
-        #display the player's health
-        """
-        defaultText = font.Font(None,100)
-        healthTextSurface = defaultText.render("Player health: " + str(playerSprite.health), True, (255,0,0))
-        healthTextRect = healthTextSurface.get_rect()
-        healthTextRect.top = 50
-        healthTextRect.left = 50
-        """
-
 
         #keeps characters in frame and handles collisions
         resolveFrame(sprites,entities,combatTextArr)
@@ -221,14 +248,25 @@ def main():
         screen.blit(bg1.image, bg1.rect)
         screen.blit(bg2.image, bg2.rect)
 
-
         #position the pc's weapon
+        #TODO: encapsulate this, preferably in Animation once I figure out why it wasn't working there.
+        playerWeapon.stateVal = playerSprite.stateVal
         if playerSprite.xflip:
-            sprites[1].sprites()[0].rect.midleft = [playerSprite.rect.midright[0],playerSprite.rect.midright[1]+58]
-            sprites[1].sprites()[0].xflip = True
+            if playerWeapon.stateVal in [1,2,4,6]:
+                playerWeapon.rect.midleft = [playerSprite.rect.midright[0],playerSprite.rect.midright[1]+58]
+            elif playerWeapon.stateVal in [3,5]:
+                playerWeapon.rect.midright = [playerSprite.rect.midleft[0]+8,playerSprite.rect.midleft[1]-62]
+            else:
+                playerWeapon.rect.topleft = [0,0]
+            playerWeapon.xflip = True
         else:
-            sprites[1].sprites()[0].rect.midright = [playerSprite.rect.midleft[0],playerSprite.rect.midleft[1]+58]
-            sprites[1].sprites()[0].xflip = False
+            if playerWeapon.stateVal in [1,2,4,6]:
+                playerWeapon.rect.midright = [playerSprite.rect.midleft[0],playerSprite.rect.midleft[1]+58]
+            elif playerWeapon.stateVal in [3,5]:
+                playerWeapon.rect.midleft = [playerSprite.rect.midright[0]-8,playerSprite.rect.midright[1]-62]
+            else:
+                playerWeapon.rect.topleft = [0,0]
+            playerWeapon.xflip = False
 
         #only animate characters and projectiles so far (i = 0 is pc, i = 1 is baddies, i = 3 is projectiles, i = 4 is background)
         animator.animate([sprites[0].sprites(), sprites[1].sprites(), sprites[2].sprites(), sprites[4].sprites(), sprites[5].sprites()], now)
@@ -243,14 +281,18 @@ def main():
         #draw all the rest of the in-use assets
         for i in range(len(sprites)):
             if i != 5: #don't draw UI
-                sprites[i].draw(screen)
+                #only draw visible sprites in each group
+                #NOTE: this is probably bad, as I'd assume .draw() is better optimized, but we can't make it optionally draw
+                #sprites unless we change everything to DirtySprites (a native type to pygame)
+                for aSprite in sprites[i].sprites():
+                    if aSprite.visible:
+                        screen.blit(aSprite.image,aSprite.rect)
 
         #draw UI last
-        #screen.blit(healthTextSurface, healthTextRect)
         if health.rect.width > 596*playerSprite.health/100:
             health.image = transform.scale(health.image, (max(0,health.rect.width-3),health.rect.height))
             health.rect = health.image.get_rect()
-            health.rect.topleft = (289,56) #tempHealthTopLeft
+            health.rect.topleft = (289,56)
         screen.blit(health.image, health.rect)
         screen.blit(healthbar.image, healthbar.rect)
         
@@ -264,7 +306,7 @@ def main():
             gameOverRect = gameOverSurface.get_rect()
             gameOverRect.center = (960,540)
             screen.blit(gameOverSurface, gameOverRect)
-            playerSprite.stateVal = 4
+            playerSprite.stateVal = 6
 
         #victory check
         enemies = sprites[2].sprites()
@@ -286,6 +328,25 @@ def resolveFrame(sprites,entities,combatTextArr):
     characters = sprites[0].sprites()
     enemies = sprites[2].sprites()
     projs = sprites[4].sprites()
+    weapon = sprites[1].sprites()[0]
+
+    #melee damage to enemies
+    smucked = sprite.spritecollide(weapon, enemies, False)
+    for victim in smucked:
+        print("SMUCKED!")
+        if now - victim.lastHit > 250:
+            victim.lastHit = now
+            healthWas = victim.health
+            victim.health -= weapon.dmg
+            direction = VectorMath.normalize([victim.rect.center[0]-weapon.rect.center[0], victim.rect.center[1]-weapon.rect.center[1]])
+            knockback = VectorMath.mult(direction,weapon.dmg)
+            Movement.coast(victim, knockback[0], knockback[1])
+            if victim.stateVal != 4:
+                newCombatText = CombatText(str(min(weapon.dmg,healthWas)), victim.rect.midtop, (255,255,255), 750, 2, now)
+                combatTextArr.append(newCombatText)
+            if victim.health <= 0:
+                victim.stateVal = 4
+            
 
     #projectile damage to enemies
     for ind in range(len(enemies)):
@@ -354,11 +415,11 @@ def resolveFrame(sprites,entities,combatTextArr):
 def physics(sprites,someSprite):
     #gravity (make shit fall)
     if not isinstance(someSprite, SpriteRemix.Projectile) or someSprite.grav:
-        testsprite = SpriteRemix.SpriteRemix(someSprite.image)
+        testsprite = SpriteRemix.SpriteRemix()
         testsprite.rect.x = someSprite.rect.x
         testsprite.rect.y = someSprite.rect.y
         testsprite.rect = testsprite.rect.move([0,1])
-        if (not sprite.spritecollide(testsprite, sprites[2], False)) and (not testsprite.rect.bottom > height-50):
+        if (not sprite.spritecollide(testsprite, sprites[3], False)) and (not testsprite.rect.bottom > height-50):
             someSprite.falling = True
         del testsprite
         if someSprite.falling == True:
