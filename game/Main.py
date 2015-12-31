@@ -334,7 +334,7 @@ def resolveFrame(sprites,entities,combatTextArr):
     smucked = sprite.spritecollide(weapon, enemies, False)
     for victim in smucked:
         print("SMUCKED!")
-        if now - victim.lastHit > 250:
+        if weapon.hostile and now - victim.lastHit > 250:
             victim.lastHit = now
             healthWas = victim.health
             victim.health -= weapon.dmg
