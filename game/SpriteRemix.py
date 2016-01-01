@@ -52,9 +52,8 @@ class UI(SpriteRemix):
         
 
 class Projectile(SpriteRemix):
-    def __init__(self, image, origin, dest, name="pcdefaultproj", speed=20, dmg = 20, grav = False, hostile = False, piercing = False):
+    def __init__(self, origin, dest, name="pcdefaultproj", speed=20, dmg = 20, grav = False, hostile = False, piercing = False):
         super().__init__()
-        self.image = image
         self.name = name
         self.origin = origin
         self.dest = dest

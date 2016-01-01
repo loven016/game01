@@ -38,7 +38,7 @@ class Animation():
 
                         #TODO: all frames
                         elif spritesList[j][i].stateVal == 4: #jumping animation
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][3])
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][5])
 
                         #TODO: all frames
                         #NOTE: depending on implementation, may need to split into 2 states for ascending/descending
@@ -154,7 +154,8 @@ class Animation():
                     transform.scale(image.load("Assets\\sprites\\pc\\pcidle2.png").convert_alpha(),(144,219)),\
                     transform.scale(image.load("Assets\\sprites\\pc\\pcidle3.png").convert_alpha(),(144,221)),\
                     transform.scale(image.load("Assets\\sprites\\pc\\pcready1.png").convert_alpha(),(94,209)),\
-                    transform.scale(image.load("Assets\\sprites\\pc\\pcattack4.png").convert_alpha(),(152,207))\
+                    transform.scale(image.load("Assets\\sprites\\pc\\pcattack4.png").convert_alpha(),(152,207)),\
+                    transform.scale(image.load("Assets\\sprites\\pc\\pcjump1.png").convert_alpha(),(128,202))\
                 ]
                 if overWrite: #0 is PC and is never deleted
                     self.inuse[overWrite] = pc

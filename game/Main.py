@@ -180,10 +180,10 @@ def main():
                     playerWeapon.hostile = False
                 
                 #ranged attack
-                if event.type == MOUSEBUTTONDOWN and event.button == 2 and playerSprite.ammo > 0 and now - playerSprite.lastShot > 250:
+                if event.type == MOUSEBUTTONDOWN and event.button == 3 and playerSprite.ammo > 0 and now - playerSprite.lastShot > 250:
                     playerSprite.ammo -= 1
                     projLoc = [playerSprite.rect.right, playerSprite.rect.bottom-130]
-                    newProj = SpriteRemix.Projectile(defaultSprite, projLoc, event.pos, speed=45)
+                    newProj = SpriteRemix.Projectile(projLoc, event.pos, speed=45)
                     animator.load(newProj)
                     newProj.add(projectiles)
                     newProj.rect.center = projLoc
