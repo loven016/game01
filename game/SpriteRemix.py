@@ -35,6 +35,7 @@ class Background(SpriteRemix):
     def __init__(self, image):
         super().__init__()
         self.image = image
+        self.rect = image.get_rect()
         self.lastUpdate = 0
         self.stateVal = 0
         self.velocity = [0,0]
@@ -45,12 +46,14 @@ class Cursor(SpriteRemix):
     def __init__(self, image):
         super().__init__()
         self.image = image
+        self.rect = image.get_rect()
 
 
 class UI(SpriteRemix):
     def __init__(self, image):
         super().__init__()
         self.image = image
+        self.rect = image.get_rect()
         
 
 class Projectile(SpriteRemix):

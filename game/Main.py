@@ -194,6 +194,7 @@ def main():
                 if event.type == MOUSEBUTTONUP and event.button == 1:
                     playerWeapon.hostile = False
                     playerSprite.state["idle"] = False
+                    playerSprite.state["attacking"] = False
                 
                 #ranged attack
                 if event.type == MOUSEBUTTONDOWN and event.button == 3 and playerSprite.ammo > 0 and now - playerSprite.lastShot > 250:
@@ -307,7 +308,7 @@ def main():
                         screen.blit(aSprite.image,aSprite.rect)
 
         # draw UI last
-        #print(playerSprite.rect.width)
+        print(health.rect.width)
         if health.rect.width > 5.96*playerSprite.health:
             print("decreasing\n")
             health.image = transform.scale(health.image, (max(0,health.rect.width-3),health.rect.height))
@@ -326,7 +327,7 @@ def main():
             gameOverRect = gameOverSurface.get_rect()
             gameOverRect.center = (960,540)
             screen.blit(gameOverSurface, gameOverRect)
-            playerSprite.stateVal = 6
+            playerSprite.state["dead"] = True
 
         #victory check
         enemies = sprites[2].sprites()
