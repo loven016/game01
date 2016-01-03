@@ -67,10 +67,10 @@ def main():
 
     #create doodads and add them to a sprite group
     doodads = sprite.Group()
-    '''box = Doodad(pygame.image.load("Assets\\sprites\\doodads\\box.png").convert())
-    alsoBox = Doodad(pygame.image.load("Assets\\sprites\\doodads\\box.png").convert())
+    box = SpriteRemix.Doodad(pygame.image.load("Assets\\sprites\\doodads\\box.png").convert())
+    #alsoBox = Doodad(pygame.image.load("Assets\\sprites\\doodads\\box.png").convert())
     box.add(doodads)
-    alsoBox.add(doodads)'''
+    #alsoBox.add(doodads)
 
     #initialize projectile sprite group (obv nothing to put here at startup
     projectiles = sprite.Group()
@@ -91,9 +91,9 @@ def main():
     baddySprite.rect.bottom = height
     baddySprite.rect.left = 960
 
-    '''box.rect.left = 540
+    box.rect.left = 540
     box.rect.bottom = height
-    alsoBox.rect.left = 920
+    '''alsoBox.rect.left = 920
     alsoBox.rect.bottom = height'''
 
     #create a list of all sprite groups
@@ -108,7 +108,7 @@ def main():
         events = pygame.event.get()
         for event in events:
 
-            idle = True
+            
             #close window and quit if x is clicked or esc is pressed
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 quit()
@@ -119,8 +119,12 @@ def main():
                 crsr.rect.centerx = event.pos[0]
                 crsr.rect.centery = event.pos[1]
 
+            #if no input is given, this remains True, animation reflects that.
+            playerSprite.state["idle"] = True
+            
             #only control pc if pc not dead
-            if playerSprite.stateVal < 6:
+            #may be simplified by banning control input events when pc dies.
+            if not playerSprite.state["dying"] and not playerSprite.state["dead"]:
 
                 
 
@@ -130,14 +134,22 @@ def main():
                     Movement.accel(playerSprite, -playerSprite.velocity[0])
                     Movement.coast(playerSprite, playerSprite.velocity[0])
                     playerSprite.idleTime = 0
-                    idle = False
+                    playerSprite.state["idle"] = False
 
                 if event.type == KEYUP and event.key == K_a:
                     playerSprite.leftDash = now
                     Movement.accel(playerSprite, -playerSprite.velocity[0])
                     Movement.coast(playerSprite, playerSprite.velocity[0])
+                    if playerSprite.velocity[0] == 0:
+                        playerSprite.state["running"] = False
                     playerSprite.idleTime = 0
-                    idle = False
+                    playerSprite.state["idle"] = False
+                    
+                if event.type == KEYUP and event.key == K_SPACE:
+                    playerSprite.velocity[1] = max(0,playerSprite.velocity[1])
+                    playerSprite.state["jumping"] = False
+                    playerSprite.idleTime = 0
+                    playerSprite.state["idle"] = False
 
                 if event.type == KEYDOWN and event.key == K_d:
                     if now - playerSprite.rightDash > 250:
@@ -146,9 +158,10 @@ def main():
                         Movement.accel(playerSprite, 24)
                     playerSprite.leftDash = 0
                     playerSprite.xflip = False
-                    playerSprite.stateVal = 2
+                    if not playerSprite.state["jumping"] and not playerSprite.state["falling"]:
+                        playerSprite.state["running"] = True
                     playerSprite.idleTime = 0
-                    idle = False
+                    playerSprite.state["idle"] = False
 
                 if event.type == KEYDOWN and event.key == K_a:
                     if now - playerSprite.leftDash > 250:
@@ -157,27 +170,30 @@ def main():
                         Movement.accel(playerSprite, -24)
                     playerSprite.rightDash = 0
                     playerSprite.xflip = True
-                    playerSprite.stateVal = 2
+                    if not playerSprite.state["jumping"] and not playerSprite.state["falling"]:
+                        playerSprite.state["running"] = True
                     playerSprite.idleTime = 0
-                    idle = False
+                    playerSprite.state["idle"] = False
 
                 if event.type == KEYDOWN and event.key == K_SPACE:
                     Movement.jump(playerSprite)
-                    playerSprite.stateVal = 4
+                    playerSprite.state["idle"] = False
+                    playerSprite.state["jumping"] = True
                     playerSprite.idleTime = 0
-                    idle = False
+                    playerSprite.state["idle"] = False
 
 
                 #melee attack
                 if event.type == MOUSEBUTTONDOWN and event.button == 1 and now - playerSprite.lastMelee > 300:
-                    playerSprite.stateVal = 3
-                    playerSprite.lastMelee = now
+                    playerSprite.state["attacking"] = True
+                    playerSprite.last["meleed"] = now
                     playerSprite.idleTime = 0
                     playerWeapon.hostile = True
-                    idle = False
+                    playerSprite.state["idle"] = False
 
                 if event.type == MOUSEBUTTONUP and event.button == 1:
                     playerWeapon.hostile = False
+                    playerSprite.state["idle"] = False
                 
                 #ranged attack
                 if event.type == MOUSEBUTTONDOWN and event.button == 3 and playerSprite.ammo > 0 and now - playerSprite.lastShot > 250:
@@ -187,10 +203,10 @@ def main():
                     animator.load(newProj)
                     newProj.add(projectiles)
                     newProj.rect.center = projLoc
-                    playerSprite.lastShot = now
-                    playerSprite.stateVal = 3
+                    playerSprite.last["shot"] = now
+                    playerSprite.state["shooting"] = True
                     playerSprite.idleTime = 0
-                    idle = False
+                    playerSprite.state["idle"] = False
 
             #ragdoll pc
             else:
@@ -198,12 +214,12 @@ def main():
                 playerSprite.ycoast = playerSprite.velocity[1]
                 playerSprite.velocity = [0,0]
 
-        if idle:
+        if playerSprite.state["idle"]:
             playerSprite.idleTime += gameClock.get_time()
             if playerSprite.idleTime >= 2000:
-                playerSprite.stateVal = 0
+                playerSprite.state["idle"] = True
             elif playerSprite.idleTime >= 300:
-                playerSprite.stateVal = 1
+                playerSprite.state["ready"] = True
 
         #baddy behavior
         '''if (now%1000 < 20) and baddySprite.stateVal != 1:
@@ -212,6 +228,8 @@ def main():
         #replenish ammo over time
         if (now %100 < 20) and playerSprite.ammo < 4:
             playerSprite.ammo += 1
+
+        
 
         #sprites move, but these moves haven't been drawn yet
         for i in range(len(sprites)-2):
@@ -240,56 +258,58 @@ def main():
                 aSprite.rect = aSprite.rect.move([aSprite.velocity[0]+aSprite.xcoast,aSprite.velocity[1]+aSprite.ycoast])
 
 
-
-        #keeps characters in frame and handles collisions
+        # keeps characters in frame and handles collisions
         resolveFrame(sprites,entities,combatTextArr)
 
-        #refresh screen by drawing over previous frame with background
-        screen.blit(bg1.image, bg1.rect)
-        screen.blit(bg2.image, bg2.rect)
-
-        #position the pc's weapon
-        #TODO: encapsulate this, preferably in Animation once I figure out why it wasn't working there.
-        playerWeapon.stateVal = playerSprite.stateVal
+        # position the pc's weapon
+        # TODO: encapsulate this, preferably in Animation once I figure out why it wasn't working there.
+        playerWeapon.state = playerSprite.state
         if playerSprite.xflip:
-            if playerWeapon.stateVal in [1,2,4,6]:
-                playerWeapon.rect.midleft = [playerSprite.rect.midright[0],playerSprite.rect.midright[1]+58]
-            elif playerWeapon.stateVal in [3,5]:
+            if playerWeapon.state["dead"] or playerWeapon.state["idle"]:
+                playerWeapon.rect.topleft = [0,0]
+            elif playerWeapon.state["attacking"] or playerWeapon.state["shooting"]:
                 playerWeapon.rect.midright = [playerSprite.rect.midleft[0]+8,playerSprite.rect.midleft[1]-62]
             else:
-                playerWeapon.rect.topleft = [0,0]
+                playerWeapon.rect.midleft = [playerSprite.rect.midright[0],playerSprite.rect.midright[1]+58]
             playerWeapon.xflip = True
         else:
-            if playerWeapon.stateVal in [1,2,4,6]:
-                playerWeapon.rect.midright = [playerSprite.rect.midleft[0],playerSprite.rect.midleft[1]+58]
-            elif playerWeapon.stateVal in [3,5]:
+            if playerWeapon.state["dead"] or playerWeapon.state["idle"]:
+                playerWeapon.rect.topleft = [0,0]
+            elif playerWeapon.state["attacking"] or playerWeapon.state["shooting"]:
                 playerWeapon.rect.midleft = [playerSprite.rect.midright[0]-8,playerSprite.rect.midright[1]-62]
             else:
-                playerWeapon.rect.topleft = [0,0]
+                playerWeapon.rect.midright = [playerSprite.rect.midleft[0],playerSprite.rect.midleft[1]+58]
             playerWeapon.xflip = False
 
-        #only animate characters and projectiles so far (i = 0 is pc, i = 1 is baddies, i = 3 is projectiles, i = 4 is background)
+        # only animate characters and projectiles so far (i = 0 is pc, i = 1 is baddies, i = 3 is projectiles, i = 4 is background)
         animator.animate([sprites[0].sprites(), sprites[1].sprites(), sprites[2].sprites(), sprites[4].sprites(), sprites[5].sprites()], now)
+
+        # refresh screen by drawing over previous frame with background
+        screen.blit(bg1.image, bg1.rect)
+        screen.blit(bg2.image, bg2.rect)
             
-        #draw active CombatText objects and remove faded ones
+        # draw active CombatText objects and remove faded ones
         for combatText in combatTextArr[:]:
             if combatText.progress(now):
                 combatText.draw(screen)
             else:
                 combatTextArr.remove(combatText)
 
-        #draw all the rest of the in-use assets
+        # draw all the rest of the in-use assets
         for i in range(len(sprites)):
             if i != 5: #don't draw UI
-                #only draw visible sprites in each group
-                #NOTE: this is probably bad, as I'd assume .draw() is better optimized, but we can't make it optionally draw
-                #sprites unless we change everything to DirtySprites (a native type to pygame)
+                # only draw visible sprites in each group
+                # NOTE: this is probably bad, as I'd assume .draw() (sprite method that blits all sprites in a sprite group)is better
+                # optimized, but we can't make it optionally draw
+                # sprites unless we change everything to DirtySprites (a type built into pygame)
                 for aSprite in sprites[i].sprites():
                     if aSprite.visible:
                         screen.blit(aSprite.image,aSprite.rect)
 
-        #draw UI last
-        if health.rect.width > 596*playerSprite.health/100:
+        # draw UI last
+        #print(playerSprite.rect.width)
+        if health.rect.width > 5.96*playerSprite.health:
+            print("decreasing\n")
             health.image = transform.scale(health.image, (max(0,health.rect.width-3),health.rect.height))
             health.rect = health.image.get_rect()
             health.rect.topleft = (289,56)
@@ -399,7 +419,7 @@ def resolveFrame(sprites,entities,combatTextArr):
 
     #if sprite hit the ground or started on the ground, convert it's vertical momentum (ycoast) into lateral momentum (xcoast),
     #may reduce this by some constant factor later for better control feel.
-    if not characters[0].falling:
+    if not characters[0].state["falling"]:
         if characters[0].xcoast > 0:
             characters[0].xcoast = VectorMath.magnitude([characters[0].xcoast,abs(characters[0].ycoast)])
         if characters[0].xcoast < 0:
@@ -416,25 +436,28 @@ def physics(sprites,someSprite):
     #gravity (make shit fall)
     if not isinstance(someSprite, SpriteRemix.Projectile) or someSprite.grav:
         testsprite = SpriteRemix.SpriteRemix()
+        testsprite.setImage(someSprite.image)
         testsprite.rect.x = someSprite.rect.x
-        testsprite.rect.y = someSprite.rect.y
-        testsprite.rect = testsprite.rect.move([0,1])
+        testsprite.rect.y = someSprite.rect.y+1
         if (not sprite.spritecollide(testsprite, sprites[3], False)) and (not testsprite.rect.bottom > height-50):
-            someSprite.falling = True
+            print("whyyy\n")
+            someSprite.state["falling"] = True
         del testsprite
-        if someSprite.falling == True:
+        if someSprite.state["falling"]:
             someSprite.velocity[1] += (max(abs(someSprite.velocity[1])*.05,1.6))
+        if someSprite.velocity[1] >= 0:
+            someSprite.state["jumping"] = False
 
     #generate list of all doodads someSprite is colliding with and uncollide it with them
     collideds = sprite.spritecollide(someSprite, sprites[3], False)
     for doodad in collideds:
         #someSprite's bottom has collided while falling
-        if someSprite.rect.bottom > doodad.rect.top and someSprite.rect.bottom <= doodad.rect.top+someSprite.velocity[1]+someSprite.ycoast\
-        and someSprite.falling :
+        if someSprite.rect.bottom >= doodad.rect.top and someSprite.rect.bottom <= doodad.rect.top+someSprite.velocity[1]+someSprite.ycoast\
+        and someSprite.state["falling"]:
             someSprite.rect.bottom = doodad.rect.top
             someSprite.numJumps = 2
             someSprite.velocity[1] = 0
-            someSprite.falling = False
+            someSprite.state["falling"] = False
 
         elif someSprite.rect.right > doodad.rect.left and someSprite.rect.right <= doodad.rect.left+someSprite.velocity[0]+someSprite.xcoast:
             someSprite.rect.right = doodad.rect.left-1
@@ -457,7 +480,7 @@ def physics(sprites,someSprite):
             someSprite.velocity[1] = 0
             someSprite.rect.bottom = height-50
             someSprite.numJumps = 2
-            someSprite.falling = False
+            someSprite.state["falling"] = False
 
         #keeps someSprite from walking off screen
         if someSprite.rect.left < 0:

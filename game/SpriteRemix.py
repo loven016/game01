@@ -23,7 +23,9 @@ class SpriteRemix(sprite.Sprite):
 
 class Doodad(SpriteRemix):
     def __init__(self, image):
-        super().__init__(image)
+        super().__init__()
+        self.image = image
+        self.rect = image.get_rect()
         self.velocity = [0,0]
         self.xcoast = 0
         self.ycoast = 0

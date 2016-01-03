@@ -1,31 +1,44 @@
 import sys
 import pygame
-from pygame import sprite
+from SpriteRemix import SpriteRemix
 
 
-class CharacterSprite(sprite.Sprite):
+class CharacterSprite(SpriteRemix):
     def __init__(self, name = "", health = 0):
         super().__init__()
-        
-        #from SpriteRemix
-        self.image = pygame.image.load("Assets\\sprites\\default.png")
-        self.rect = self.image.get_rect()
-        self.xcoast = 0
-        self.ycoast = 0
-        self.id = 0
-        self.visible = True
-        
+                
         #from SpriteRemix.CharacterSprite
         self.name = name
-        self.front = self.rect.right
-        self.collided = False
-        self.falling = False
+        self.falling = False #TODO: fold into self.state
         self.velocity = [0,0]
         self.numJumps = 1
-        self.stateVal = 0
+        self.stateVal = 0 #TODO: fold into self.state
         self.lastShot = 0 #last time the unit fired a projectile
         self.lastMelee = 0
-        #self.state = [idle,ready,running,attack,dead]
+
+        # boolean dictionary that represents the state of a character
+        # (e.g. ducking and attacking, falling and dying)
+        # can be added to, may add dashing, blocking, etc.
+        self.state = {"idle":False,\
+                      "ready":True,\
+                      "attacking":False,\
+                      "shooting":False,\
+                      "ducking":False,\
+                      "running":False,\
+                      "jumping":False,\
+                      "falling":False,\
+                      "dying":False,\
+                      "dead":False,\
+                     }
+        # dict of ints representing the last time an action was taken
+        # allows combos of inputs
+        self.last = {"ran":0,\
+                      "dashed":0,\
+                      "jumped":0,\
+                      "meleed":0,\
+                      "shot":0,\
+                    }
+        
         self.xflip = False
         self.idleTime = 0
         

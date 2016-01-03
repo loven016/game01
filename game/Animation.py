@@ -16,41 +16,76 @@ class Animation():
                     tempLoc = spritesList[j][i].rect.bottomleft
                     if spritesList[j][i].name == "pc":
 
-                        if spritesList[j][i].stateVal == 0: #idle animation
+                        if spritesList[j][i].state["idle"]:
                             if now % 1500 > 750:                    
                                 spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
                             elif now % 1500 > 400 or now % 1500 <= 150:
                                 spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][1])
                             else:
                                 spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][2])
-                        
-                        #TODO: finish frames
-                        elif spritesList[j][i].stateVal == 1: #ready animation
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][3])
+
+                        elif spritesList[j][i].state["jumping"]:
+                            if spritesList[j][i].state["shooting"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["shooting"] = False
+                                    
+                            elif spritesList[j][i].state["attacking"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["attacking"] = False
+
+                            else:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][5])
+
+                        elif spritesList[j][i].state["falling"]:
+                            if spritesList[j][i].state["shooting"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["shooting"] = False
+                                    
+                            elif spritesList[j][i].state["attacking"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["attacking"] = False
+                            else:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][6])
+                                
+                        elif spritesList[j][i].state["running"]:
+                            if spritesList[j][i].state["shooting"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["shooting"] = False
+                                    
+                            elif spritesList[j][i].state["attacking"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["attacking"] = False
+                                    
+                            else:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][3])
+
+                                                
+                        elif spritesList[j][i].state["ready"]:
+                            if spritesList[j][i].state["shooting"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["shooting"] = False
+                                    
+                            elif spritesList[j][i].state["attacking"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["attacking"] = False
+                                    
+                            else:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][3])
 
                         #TODO: all frames
-                        elif spritesList[j][i].stateVal == 2: #running animation
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][3])
-
-                        #TODO: finish frames
-                        elif spritesList[j][i].stateVal == 3: #attack animation
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
-
-                        #TODO: all frames
-                        elif spritesList[j][i].stateVal == 4: #jumping animation
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][5])
-
-                        #TODO: all frames
-                        #NOTE: depending on implementation, may need to split into 2 states for ascending/descending
-                        elif spritesList[j][i].stateVal == 5: #jumping attack animation
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
-
-                        #TODO: all frames
-                        elif spritesList[j][i].stateVal == 6: #dying animation
+                        elif spritesList[j][i].state["dying"]:
                             spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
 
                         #TODO: frame
-                        elif spritesList[j][i].stateVal == 7: #corpse frame
+                        elif spritesList[j][i].state["dead"]:
                             spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
 
                     if spritesList[j][i].xflip:
@@ -66,29 +101,27 @@ class Animation():
 
                         spritesList[j][i].visible = True
                         
-                        if spritesList[j][i].stateVal == 0: #idle
-                            spritesList[j][i].visible = False
-                        
-                        elif spritesList[j][i].stateVal == 1: #ready
+                        if spritesList[j][i].state["dying"]:
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
+
+                        elif spritesList[j][i].state["attacking"] or spritesList[j][i].state["shooting"]:
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][1])
+
+                        elif spritesList[j][i].state["jumping"]:
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
+
+                        elif spritesList[j][i].state["falling"]:
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
+
+                        elif spritesList[j][i].state["running"]:
+                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
+                            
+                        elif spritesList[j][i].state["ready"]:
                             spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
                             #this doesn't work, and I don't know why. Altering value instead of object perhaps?
                             '''spritesList[j][i].rect.midright = spritesList[0][0].rect.midleft'''
-                        elif spritesList[j][i].stateVal == 2: #running
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
 
-                        elif spritesList[j][i].stateVal == 3: #attack
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][1])
-
-                        elif spritesList[j][i].stateVal == 4: #jump
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
-
-                        elif spritesList[j][i].stateVal == 5: #jump attack
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][1])
-
-                        elif spritesList[j][i].stateVal == 6: #dying
-                            spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][0])
-
-                        elif spritesList[j][i].stateVal == 7: #corpse
+                        if spritesList[j][i].state["idle"] or spritesList[j][i].state["dead"]:
                             spritesList[j][i].visible = False
 
                     if spritesList[j][i].xflip:
@@ -126,9 +159,9 @@ class Animation():
 
                 elif isinstance(spritesList[j][i], SpriteRemix.Background):
                     if spritesList[j][i].stateVal == 1:
-                        if now - spritesList[j][i].lastUpdate > 48:
+                        if now - spritesList[j][i].lastUpdate > 16:
                             spritesList[j][i].lastUpdate = now
-                            spritesList[j][i].velocity = [1,0]
+                            spritesList[j][i].velocity = [2,0]
                         else:
                             spritesList[j][i].velocity = [0,0]
                         if spritesList[j][i].rect.left >= 1920:
@@ -155,7 +188,8 @@ class Animation():
                     transform.scale(image.load("Assets\\sprites\\pc\\pcidle3.png").convert_alpha(),(144,221)),\
                     transform.scale(image.load("Assets\\sprites\\pc\\pcready1.png").convert_alpha(),(94,209)),\
                     transform.scale(image.load("Assets\\sprites\\pc\\pcattack4.png").convert_alpha(),(152,207)),\
-                    transform.scale(image.load("Assets\\sprites\\pc\\pcjump1.png").convert_alpha(),(128,202))\
+                    transform.scale(image.load("Assets\\sprites\\pc\\pcjump1.png").convert_alpha(),(128,202)),\
+                    transform.scale(image.load("Assets\\sprites\\pc\\pcfall1.png").convert_alpha(),(106,197))\
                 ]
                 if overWrite: #0 is PC and is never deleted
                     self.inuse[overWrite] = pc
