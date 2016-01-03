@@ -308,9 +308,7 @@ def main():
                         screen.blit(aSprite.image,aSprite.rect)
 
         # draw UI last
-        print(health.rect.width)
         if health.rect.width > 5.96*playerSprite.health:
-            print("decreasing\n")
             health.image = transform.scale(health.image, (max(0,health.rect.width-3),health.rect.height))
             health.rect = health.image.get_rect()
             health.rect.topleft = (289,56)
@@ -354,7 +352,6 @@ def resolveFrame(sprites,entities,combatTextArr):
     #melee damage to enemies
     smucked = sprite.spritecollide(weapon, enemies, False)
     for victim in smucked:
-        print("SMUCKED!")
         if weapon.hostile and now - victim.lastHit > 250:
             victim.lastHit = now
             healthWas = victim.health
@@ -441,7 +438,6 @@ def physics(sprites,someSprite):
         testsprite.rect.x = someSprite.rect.x
         testsprite.rect.y = someSprite.rect.y+1
         if (not sprite.spritecollide(testsprite, sprites[3], False)) and (not testsprite.rect.bottom > height-50):
-            print("whyyy\n")
             someSprite.state["falling"] = True
         del testsprite
         if someSprite.state["falling"]:
