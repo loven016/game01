@@ -3,6 +3,9 @@ from pygame import sprite
 from Movement import *
 from Animation import *
 
+
+#TODO: relocate a bunch of these classes into their own files
+
 class SpriteRemix(sprite.Sprite):
     
     def __init__(self):
@@ -81,3 +84,9 @@ class Weapon(SpriteRemix):
         self.dmg = 40
         self.stateVal = 1
         #self.state = ["static","spinning","sinewave",...
+
+class Tile(sprite.Sprite):
+    def __init__(self, image):
+        super().__init()
+        self.image = image
+        self.rect = image.get_rect()

@@ -50,7 +50,7 @@ class Animation():
                                     spritesList[j][i].state["attacking"] = False
                             else:
                                 spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][6])
-                                
+                            
                         elif spritesList[j][i].state["running"]:
                             if spritesList[j][i].state["shooting"]:
                                 spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
@@ -65,8 +65,24 @@ class Animation():
                             else:
                                 spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][3])
 
+                        elif spritesList[j][i].state["ducking"]:
+                            #print("ducking")
+                            if spritesList[j][i].state["shooting"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][7])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["shooting"] = False
+                                    
+                            elif spritesList[j][i].state["attacking"]:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][7])
+                                if now - spritesList[j][i].last["meleed"] > 300:
+                                    spritesList[j][i].state["attacking"] = False
+                                    
+                            else:
+                                spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][7])
+
                                                 
                         elif spritesList[j][i].state["ready"]:
+                            #print("ready")
                             if spritesList[j][i].state["shooting"]:
                                 spritesList[j][i].setImage(self.inuse[spritesList[j][i].id][4])
                                 if now - spritesList[j][i].last["meleed"] > 300:
@@ -121,7 +137,7 @@ class Animation():
                             #this doesn't work, and I don't know why. Altering value instead of object perhaps?
                             '''spritesList[j][i].rect.midright = spritesList[0][0].rect.midleft'''
 
-                        if spritesList[j][i].state["idle"] or spritesList[j][i].state["dead"]:
+                        if spritesList[j][i].state["idle"] or spritesList[j][i].state["dead"] or spritesList[j][i].state["ducking"]:
                             spritesList[j][i].visible = False
 
                     if spritesList[j][i].xflip:
@@ -189,7 +205,8 @@ class Animation():
                     transform.scale(image.load("Assets\\sprites\\pc\\pcready1.png").convert_alpha(),(94,209)),\
                     transform.scale(image.load("Assets\\sprites\\pc\\pcattack4.png").convert_alpha(),(152,207)),\
                     transform.scale(image.load("Assets\\sprites\\pc\\pcjump1.png").convert_alpha(),(128,202)),\
-                    transform.scale(image.load("Assets\\sprites\\pc\\pcfall1.png").convert_alpha(),(106,197))\
+                    transform.scale(image.load("Assets\\sprites\\pc\\pcfall1.png").convert_alpha(),(106,197)),\
+                    transform.scale(image.load("Assets\\sprites\\pc\\pccrouch1.png").convert_alpha(),(99,111))\
                 ]
                 if overWrite: #0 is PC and is never deleted
                     self.inuse[overWrite] = pc

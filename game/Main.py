@@ -120,7 +120,8 @@ def main():
                 crsr.rect.centery = event.pos[1]
 
             #if no input is given, this remains True, animation reflects that.
-            playerSprite.state["idle"] = True
+            if not playerSprite.state["ducking"]:
+                playerSprite.state["idle"] = True
             
             #only control pc if pc not dead
             #may be simplified by banning control input events when pc dies.
@@ -129,49 +130,66 @@ def main():
                 
 
                 #movement d-right a-left space-jump
-                if event.type == KEYUP and event.key == K_d:
-                    playerSprite.rightDash = now
-                    Movement.accel(playerSprite, -playerSprite.velocity[0])
-                    Movement.coast(playerSprite, playerSprite.velocity[0])
-                    playerSprite.idleTime = 0
-                    playerSprite.state["idle"] = False
+                if not playerSprite.state["ducking"]:
+                    if event.type == KEYUP and event.key == K_d:
+                        playerSprite.rightDash = now
+                        Movement.accel(playerSprite, -playerSprite.velocity[0])
+                        Movement.coast(playerSprite, playerSprite.velocity[0])
+                        if playerSprite.velocity[0] == 0:
+                            playerSprite.state["running"] = False
+                        playerSprite.idleTime = 0
+                        playerSprite.state["idle"] = False
 
-                if event.type == KEYUP and event.key == K_a:
-                    playerSprite.leftDash = now
-                    Movement.accel(playerSprite, -playerSprite.velocity[0])
-                    Movement.coast(playerSprite, playerSprite.velocity[0])
-                    if playerSprite.velocity[0] == 0:
-                        playerSprite.state["running"] = False
-                    playerSprite.idleTime = 0
-                    playerSprite.state["idle"] = False
-                    
+                    elif event.type == KEYUP and event.key == K_a:
+                        playerSprite.leftDash = now
+                        Movement.accel(playerSprite, -playerSprite.velocity[0])
+                        Movement.coast(playerSprite, playerSprite.velocity[0])
+                        if playerSprite.velocity[0] == 0:
+                            playerSprite.state["running"] = False
+                        playerSprite.idleTime = 0
+                        playerSprite.state["idle"] = False
+
+                    elif event.type == KEYDOWN and event.key == K_d:
+                        if now - playerSprite.rightDash > 250:
+                            Movement.accel(playerSprite, 12)
+                        else:
+                            Movement.accel(playerSprite, 24)
+                        playerSprite.leftDash = 0
+                        playerSprite.xflip = False
+                        if not playerSprite.state["jumping"] and not playerSprite.state["falling"]:
+                            playerSprite.state["running"] = True
+                        playerSprite.idleTime = 0
+                        playerSprite.state["idle"] = False
+
+                    elif event.type == KEYDOWN and event.key == K_a:
+                        if now - playerSprite.leftDash > 250:
+                            Movement.accel(playerSprite, -12)
+                        else:
+                            Movement.accel(playerSprite, -24)
+                        playerSprite.rightDash = 0
+                        playerSprite.xflip = True
+                        if not playerSprite.state["jumping"] and not playerSprite.state["falling"]:
+                            playerSprite.state["running"] = True
+                        playerSprite.idleTime = 0
+                        playerSprite.state["idle"] = False
+
+                if playerSprite.velocity[0] == 0 and playerSprite.velocity[1] == 0:
+                    if event.type == KEYUP and event.key == K_s:
+                        playerSprite.idleTime = 0
+                        playerSprite.state["ducking"] = False
+                        playerSprite.state["idle"] = False
+
+                    elif event.type == KEYDOWN and event.key == K_s:
+                        #crouching provides traction
+                        playerSprite.xcoast = playerSprite.xcoast/2.0
+                        playerSprite.state["ducking"] = True
+                        playerSprite.idleTime = 0
+                        playerSprite.state["idle"] = False
+
+
                 if event.type == KEYUP and event.key == K_SPACE:
                     playerSprite.velocity[1] = max(0,playerSprite.velocity[1])
                     playerSprite.state["jumping"] = False
-                    playerSprite.idleTime = 0
-                    playerSprite.state["idle"] = False
-
-                if event.type == KEYDOWN and event.key == K_d:
-                    if now - playerSprite.rightDash > 250:
-                        Movement.accel(playerSprite, 12)
-                    else:
-                        Movement.accel(playerSprite, 24)
-                    playerSprite.leftDash = 0
-                    playerSprite.xflip = False
-                    if not playerSprite.state["jumping"] and not playerSprite.state["falling"]:
-                        playerSprite.state["running"] = True
-                    playerSprite.idleTime = 0
-                    playerSprite.state["idle"] = False
-
-                if event.type == KEYDOWN and event.key == K_a:
-                    if now - playerSprite.leftDash > 250:
-                        Movement.accel(playerSprite, -12)
-                    else:
-                        Movement.accel(playerSprite, -24)
-                    playerSprite.rightDash = 0
-                    playerSprite.xflip = True
-                    if not playerSprite.state["jumping"] and not playerSprite.state["falling"]:
-                        playerSprite.state["running"] = True
                     playerSprite.idleTime = 0
                     playerSprite.state["idle"] = False
 
@@ -229,6 +247,9 @@ def main():
         #replenish ammo over time
         if (now %100 < 20) and playerSprite.ammo < 4:
             playerSprite.ammo += 1
+
+        if (now % 5000 < 20):
+            print(playerSprite.state)
 
         
 
